@@ -94,7 +94,13 @@ def experiment(reader, classifier_name, features, trials, split):
     reader.run()
     print("done reading")
     read_time = time.time() - read_start_time
+
+    print(reader.data)
+    print("THAT ^^^ was data")
+
     classifier = ModelTrainer(reader, classifier=classifier_name, split=split)
+
+    #print(classifier.data)
 
     for i in range(trials):
         print("Starting trial {} out of {} for {} {}".format(i, trials,

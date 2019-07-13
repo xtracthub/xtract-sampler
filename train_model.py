@@ -39,6 +39,8 @@ class ModelTrainer(object):
         for group in groups:
             raw_data, X, Y = group
             for i in range(len(raw_data)):
+                #print(raw_data)
+                #print("THAT WAS RAW DATA")
                 x, y = reader.feature.translate(raw_data[i])
                 X[i] = x
                 Y[i] = y
