@@ -1,170 +1,133 @@
-#!/usr/local/bin/python3
-
-"""
-This main script handles both the training and prediction tasks of the
-file forensic byte-level predictor.This is constructed to run in a Python3
-Docker container, but can be easily adapted otherwise.
-
-    Authors: Galen Harrison and Tyler Skluzacek (skluzacek@uchicago.edu)
-    Last Edited: 07/03/2018
-"""
-
 import argparse
+import time
+import datetime
+import pickle as pkl
 import json
 import os
-import pickle
-import time
-
-import numpy as np
-import sqlite3
 
 from headbytes import HeadBytes
+from extpredict import SystemReader
 from extpredict import NaiveTruthReader
-from extpredict import FileReader
-from classify import ClassifierBuilder
+from train_model import ModelTrainer
+from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
 from ngram import Ngram
 from randngram import RandNgram
-from sklearn import preprocessing
+from predict import predict_single_file
 
-DB_PATH = os.environ["DB_PATH"]
-
-with open('/src/CLASS_TABLE.json', 'r') as f:
-    label_map = json.load(f)
-    f.close()
+# Current time for documentation purposes
+current_time = datetime.datetime.today().strftime('%Y-%m-%d')
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Run file classification experiments')
 
-    # TODO: Make these customizable eventually.
-    classifier = "rf"
-    feature = "head"
+    parser.add_argument("--dirname", type=str, help="")
+    parser.add_argument("--n", type=int, default=10,
+                        help="number of trials", dest="n")
+    parser.add_argument("--classifier", type=str,
+                        help="model to use: svc, logit, rf", required=True)
+    parser.add_argument("--feature", type=str,
+                        help="feature to use: head, rand, randhead, "
+                             "ngram, randngram", required=True)
+    parser.add_argument("--split", type=float, default=0.8,
+                        help="test/train split ratio", dest="split")
+    parser.add_argument("--head-bytes", type=int, default=512,
+                        dest="head_bytes",
+                        help="size of file head in bytes, default 512")
+    parser.add_argument("--rand-bytes", type=int, default=512,
+                        dest="rand_bytes",
+                        help="number of random bytes, default 512")
+    parser.add_argument("--ngram", type=int, dest="ngram", default=1,
+                        help="number of grams for ngram")
+    args = parser.parse_args()
 
-    if classifier not in ["svc", "logit", "rf"]:
-        print("Invalid classifier option %s" % classifier)
+    if args.classifier not in ["svc", "logit", "rf"]:
+        print("Invalid classifier option %s" % args.classifier)
         return
 
-    if feature == "head":
-        features = HeadBytes(head_size=512)
+    if args.feature == "head":
+        features = HeadBytes(head_size=args.head_bytes)
+    elif args.feature == "rand":
+        features = RandBytes(number_bytes=args.rand_bytes)
+    elif args.feature == "randhead":
+        features = RandHead(head_size=args.head_bytes,
+                            rand_size=args.rand_bytes)
+    elif args.feature == "ngram":
+        features = Ngram(args.ngram)
+    elif args.feature == "randngram":
+        features = RandNgram(args.ngram, args.rand_bytes)
     else:
-        raise ValueError("Invalid feature type -- only HEAD supported now.")
+        print("Invalid feature option %s" % args.feature)
+        return
 
+    #reader = SystemReader(dirname)
     reader = NaiveTruthReader(features)
-    experiment(reader, classifier, "outfile", 1, split=0.5)
+    experiment(reader, args.classifier, args.feature, args.n,
+               split=args.split)
 
 
-# Leave this with blank arguments to facilitate re-addition of live-training.
-def experiment(reader, classifier_name, outfile, trials, split, debug=False):
+def experiment(reader, classifier_name, features, trials, split):
+    """Trains classifier_name on features from files in reader trials number
+    of times and saves the model and returns training and testing data.
+
+    Parameters:
+    reader (list): List of file paths, features, and labels read from a
+    label file.
+    classifier_name (str): Type of classifier to use ("svc": support vector
+    classifier, "logit": logistic regression, or "rf": random forest).
+    features (str): Type of features to train on (head, rand, randhead,
+    ngram, randngram).
+    outfile (str): Name of file to write outputs to.
+    trials (int): Number of times to train a model with randomized features
+    for each training.
+    split (float): Float between 0 and 1 which indicates how much data to
+    use for training. The rest is used as a testing set.
+
+    Return:
+    (pkl): Writes a pkl file containing the model.
+    (json): Writes a json named outfile with training and testing data.
     """
-    :param reader - System reader with feature already set
-    :param classifier_name - a string specifying the classifier type (svc, logit, etc.)
-    :param outfile - string with filename of output file
-    :param trials - number of randomized trials we run on train/test.
-    :param split - n% of data in training set. 100-n% is used for testing.
-    :param debug - set to True if debugging the models (for train/test)
-    """
-
-    # Get the files on which we need to operate (BATCH-LIST)
-    files = get_files()
-
-    # For each file, get the associated sample_estimate.
-    trained_classifer = open_model()
-
-    for the_file in files:
-
-        try:
-            prediction = predict_single_file(the_file, trained_classifer)
-
-            postgres_update(the_file, prediction)  # TODO: Add time taken once fleshed out.
-
-        except Exception as e:
-            # TODO: Multiple possible exceptions in here. Explore further.
-            pass
-
-
-def open_model():
-    with open('/src/FTI_Models/training_test.pkl', 'rb') as tr:
-        trained_classifier = pickle.load(tr)
-        print("Successfully opened trained classifier!")
-        return trained_classifier
-
-
-def predict_single_file(filename, trained_classifier):  # TODO: DO this with names PULLED DOWN from db. :)
-    """ Input a single file, featurizes it, and predicts the type based on the trained model. """
-
-    feature_environ = "head"
-
-    if feature_environ == "head":
-        features = HeadBytes()
-    elif feature_environ == "randhead":
-        features = RandHead()
-    elif feature_environ == "rand":
-        features = RandBytes
-    else:
-        raise Exception("Not a valid feature set. ")
-
-    reader = FileReader(feature_maker=features, filename=filename)
-
+    read_start_time = time.time()
+    print("reading")
     reader.run()
+    print("done reading")
+    read_time = time.time() - read_start_time
+    classifier = ModelTrainer(reader, classifier=classifier_name, split=split)
 
-    data = [line for line in reader.data][2]
+    for i in range(trials):
+        print("Starting trial {} out of {} for {} {}".format(i, trials,
+                                                             classifier_name,
+                                                             features))
+        classifier_start = time.time()
+        print("training")
+        classifier.train()
+        print("done training")
+        accuracy = score_model(classifier.model, classifier.X_test,
+                               classifier.Y_test)
+        classifier_time = time.time() - classifier_start
 
-    le = preprocessing.LabelEncoder()  # TODO: Check efficacy. Don't use encoder when training...
+        model_name = "{}-{}-trial{}-{}.pkl".format(classifier_name, features,
+                                                   i + 1, current_time)
+        outfile_name = "{}-{}-{}.json".format(classifier_name, features,
+                                              current_time)
 
-    x = np.array(data)
-    x = le.fit_transform(x)
-    x = [x]
+        with open(model_name, "wb") as model_file:
+            pkl.dump(classifier.model, model_file)
+        with open(outfile_name, "a") as data_file:
+            output_data = {"Classifier": classifier_name,
+                           "Feature": features,
+                           "Trial": i,
+                           "Read time": read_time,
+                           "Train and test time": classifier_time,
+                           "Model accuracy": accuracy,
+                           "Model size": os.path.getsize(model_name)}
+            json.dump(output_data, data_file)
 
-    prediction = trained_classifier.predict(x)
-
-    #  Now convert the label into English :)
-
-    label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-    return label
-
-
-def get_files():
-
-    #TODO: Edit this to make it cleaner.
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    query = """SELECT path FROM files WHERE last_extractor = 'init'; """
-
-    cur.execute(query)
-    conn.commit()
-    results = cur.fetchall()
-
-    unsampled_files = []
-    for hit in results:  # TODO: this path correction only called in DEBUG context.
-        path = hit[0].replace('/home/ubuntu/', '/home/skluzacek/Downloads/')
-        unsampled_files.append(path)
-
-    return unsampled_files
-
-
-def postgres_update(filename, prediction):  # TODO: Database optimization.
-    conn = sqlite3.connect(DB_PATH)
-
-    cur = conn.cursor()
-    query = """UPDATE files SET last_extractor = {0}, done='t' where path = {1};"""
-    query = query.format(get_postgres_str(prediction), get_postgres_str(filename))
-
-    cur.execute(query)
-    conn.commit()
-    conn.close()
-
-
-def get_postgres_str(obj):
-    """ Short helper method to add the apostrophes that postgres wants. Also casts to str. """
-    string = "'" + str(obj) + "'"
-    return string
+        if i != trials-1:
+            classifier.shuffle()
 
 
 if __name__ == '__main__':
-    t0 = time.time()
     main()
-    t1 = time.time()
-
-    print("Total file sample time: " + str(t1-t0))
-    exit()
