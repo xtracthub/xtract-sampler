@@ -39,8 +39,6 @@ class ModelTrainer(object):
         for group in groups:
             raw_data, X, Y = group
             for i in range(len(raw_data)):
-                #print(raw_data)
-                #print("THAT WAS RAW DATA")
                 x, y = reader.feature.translate(raw_data[i])
                 X[i] = x
                 Y[i] = y
@@ -52,7 +50,7 @@ class ModelTrainer(object):
         if self.classifier_type == "svc":
             self.model = SVC(gamma='auto')
         elif self.classifier_type == "logit":
-            self.model = LogisticRegression()
+            self.model = LogisticRegression(multi_class='auto', solver='lbfgs')
         elif self.classifier_type == "rf":
             self.model = RandomForestClassifier(n_estimators=15,
                                                 max_depth=4000,

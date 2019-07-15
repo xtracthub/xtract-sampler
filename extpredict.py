@@ -1,6 +1,5 @@
 import os
 import csv
-import multiprocessing as mp
 import numpy as np
 
 
@@ -142,7 +141,7 @@ class NaiveTruthReader(object):
                 row_data = ([os.path.dirname(row["path"]),
                             os.path.basename(row["path"]), features,
                             row["file_label"]])
-                print(row_data)
+                print(np.array(row_data).shape)
                 return row_data
         except (FileNotFoundError, PermissionError):
             print("Could not open %s" % row["path"])
@@ -151,12 +150,28 @@ class NaiveTruthReader(object):
         labelf = open(self.labelfile, "r")
 
         reader = csv.DictReader(labelf)
-        pools = mp.Pool()
+        # pools = mp.Pool()
+        #
+        # self.data = pools.map(self.extract_row_data, reader)
+        # pools.close()
+        # pools.join()
+        # for idx, item in enumerate(self.data):
+        #     self.data[idx] = item
+        # print(self.data[0])
+        # print(np.array(self.data).shape)
 
-        self.data = (pools.map(self.extract_row_data, reader))
+        for idx, row in enumerate(reader):
+            try:
+                with open(row["path"], "rb") as open_file:
+                    features = self.feature.get_feature(open_file)
+                    row_data = ([os.path.dirname(row["path"]),
+                                 os.path.basename(row["path"]), features,
+                                 row["file_label"]])
+                    print(idx)
+                    self.data.append(row_data)
+            except (FileNotFoundError, PermissionError):
+                print("Could not open %s" % row["path"])
 
-        pools.close()
-        pools.join()
         print(np.array(self.data).shape)
 
 

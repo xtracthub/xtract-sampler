@@ -1,25 +1,10 @@
-FROM ubuntu:16.04
+FROM python:latest
 
-RUN apt-get update && \
-    apt-get install -y python python-dev python-pip python3-pip python-virtualenv && \
-    rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip \
-    && pip3 install scipy \
-    && pip3 install sklearn \
-    && pip3 install matplotlib \
-    && pip3 install gensim \
-    && pip3 install numpy
+ 
+MAINTAINER Ryan Wong
 
-# NOTE: only used in case we can't get r/w permissions on host OS.
-VOLUME ["/DataVolume1"]
+COPY classify.py extpredict.py feature.py headbytes.py main.py predict.py randbytes.py randhead.py test_model.py train_model.py rf-head-default.pkl naivetruth.csv /
 
-# Bundle app source
-COPY /run.py /src/run.py
+RUN pip install sklearn numpy
 
-
-ADD /FTI_Models /src/FTI_Models
-COPY /FTI_Models/CLASS_TABLE.json /src/CLASS_TABLE.json
-
-
-# Run the following command
-CMD ["python", "/src/run.py"]
+ENTRYPOINT ["python", "main.py"]

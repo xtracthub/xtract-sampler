@@ -1,4 +1,3 @@
-import numpy as np
 from os.path import getsize
 from feature import FeatureMaker
 from random import randint
@@ -56,8 +55,10 @@ class RandBytes(FeatureMaker):
         (tuple): 2-tuple of a numpy array containing an integer version of
         entry and a dictionary of labels and indices.
         """
-        print("HERE")
-        x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
+        try:
+            x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
+        except:
+            print("x fail")
         
         try:
             y = self.class_table[entry[-1]]

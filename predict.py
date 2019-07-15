@@ -4,8 +4,6 @@ from headbytes import HeadBytes
 from extpredict import FileReader
 from randbytes import RandBytes
 from randhead import RandHead
-from ngram import Ngram
-from randngram import RandNgram
 from sklearn import preprocessing
 
 
@@ -27,8 +25,6 @@ def predict_single_file(filename, trained_classifier, feature):
         features = RandHead()
     elif feature == "rand":
         features = RandBytes()
-    elif feature == "ngram":
-        features = Ngram()
     elif feature == "randngram":
         features = RandNgram()
     else:
