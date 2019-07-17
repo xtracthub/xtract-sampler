@@ -101,7 +101,7 @@ def parallel_infer_type(filepaths_list):
         return create_row(filepath)
 
 
-def write_naive_truth(outfile, top_dir):
+def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader = SystemReader(top_dir)
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
@@ -110,19 +110,21 @@ def write_naive_truth(outfile, top_dir):
         csv_writer = csv.writer(f)
         csv_writer.writerow(["path", "size", "file_label"])
 
-        pools = mp.Pool()
-        list_of_rows = pools.map(parallel_infer_type, system_reader.filepaths)
-        pools.close()
-        pools.join()
-        # for filepath in system_reader.filepaths:
-        #     csv_writer.writerow(create_row(filepath))
-        for row in list_of_rows:
-            csv_writer.writerow(row)
+        if multiprocess:
+            pools = mp.Pool()
+            list_of_rows = pools.map(parallel_infer_type, system_reader.filepaths)
+            pools.close()
+            pools.join()
+            for row in list_of_rows:
+                csv_writer.writerow(row)
+        else:
+            for filepath in system_reader.filepaths:
+                csv_writer.writerow(create_row(filepath))
 
 
-file_path = 'C:/Users/space/Documents/CS/CDAC/official_xtract/sampler_dataset'
+
+file_path = 'C:/Users/space/Documents/CS/CDAC/official_xtract/xtract-netcdf'
 write_naive_truth('blah.csv', file_path)
-# if __name__ == "__main__":
 
 
 
