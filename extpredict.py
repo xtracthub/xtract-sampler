@@ -1,65 +1,58 @@
-#!/usr/local/bin/python3
-
-"""
-extpredict is a feature selection experiment. It takes a file system, reads in
-all files, featurises them somehow and then tries to predict their file extension
-(again somehow).
-"""
 import os
 import csv
+import numpy as np
 
 
 class FileReader(object):
-    """ Takes a single file and turns it into features. """
+    """Takes a single file and turns it into features."""
 
     def __init__(self, filename, feature_maker):
-        """
-        top_dir - the starting directory, a string
-        feature_maker - an instance of the FileFeature class, where feature
-                        extraction logic is located
+        """Initializes FileReader class.
 
+        Parameters:
+        filename (str): Name of file to turn into features.
+        feature_maker (class): An instance of the HeadBytes,
+        RandBytes, RandHead class.
         """
         if not os.path.isfile(filename):
-            raise FileNotFoundError("%s is not a valid directory" % filename)
+            raise FileNotFoundError("%s is not a valid file" % filename)
 
         self.filename = filename
         self.feature = feature_maker
         self.data = []
 
     def handle_file(self, filename):
+        """Extract features from a file.
 
-        """put a single file's features into the pot """
-        # at some point we may want to parallelize fs traversal, to do that
-        # we could make this a standalone function and use pool.map
+        Parameter:
+        filename (str): Name of file to extract features from.
 
+        Return:
+        (list): List of features and file extension of filename.
+        """
         try:
             with open(filename, "rb") as open_file:
                 extension = get_extension(filename)
                 features = self.feature.get_feature(open_file)
-                #print("Features are: " + str(features))
                 return (['/home/skluzacek', 'newfile.csv', features, extension])
 
         except (FileNotFoundError, PermissionError):
             pass
 
-
-
     def run(self):
         self.data = self.handle_file(self.filename)
 
 
-
 class SystemReader(object):
-    """
-    Traverses fs, and produces initial dataset for prediction
-    """
+    """Traverses file system, and produces initial dataset for prediction."""
 
     def __init__(self, top_dir, feature_maker):
-        """
-        top_dir - the starting directory, a string
-        feature_maker - an instance of the FileFeature class, where feature
-                        extraction logic is located
+        """Initializes SystemReader class.
 
+        top_dir (str): The starting directory of files to get
+        features from.
+        feature_maker (class): An instance of the HeadBytes,
+        RandBytes, RandHead class.
         """
         if not os.path.isdir(top_dir):
             raise NotADirectoryError("%s is not a valid directory" % top_dir)
@@ -70,8 +63,14 @@ class SystemReader(object):
         self.next_dirs = []
 
     def handle_file(self, filename, current_dir):
+        """Appends current_dir, filename, features of filename and
+        extension of filename to self.data.
 
-        """put a single file's features into the pot """
+        Parameters:
+        filename (str): Name of file to extract features from.
+        current_dir (str): Name of current directory that filename is
+        in.
+        """
         # at some point we may want to parallelize fs traversal, to do that
         # we could make this a standalone function and use pool.map
 
@@ -85,17 +84,20 @@ class SystemReader(object):
         except (FileNotFoundError, PermissionError):
             pass
 
-
     def parse_dir(self, dirname):
+        """Parse a directory with path dirname, add subdirectories to
+        the list to be processed, and extract features from files.
+
+        Parameter:
+        dirname (str): Name of directory to parse.
         """
-        parse a directory with path dirname, add subdirs to the list
-        to be processed, and add files to feature destination
-        """
+        # at some point we may want to parallelize fs traversal, to do that
+        # we could make this a standalone function and use pool.map
         files = []
 
         for name in os.listdir(dirname):
             if name[0] == ".":
-                continue  # exclude hidden files and dirs for time being
+                continue # exclude hidden files and dirs for time being
             if os.path.isfile(os.path.join(dirname, name)):
                 files.append(name)
             elif os.path.isdir(os.path.join(dirname, name)):
@@ -105,7 +107,7 @@ class SystemReader(object):
             self.handle_file(filename, dirname)
 
     def run(self):
-        """ run extraction on top_dir"""
+        """Extract features from all files in top_dir."""
         self.next_dirs = [self.dirname]
 
         while self.next_dirs:
@@ -114,47 +116,75 @@ class SystemReader(object):
 
 
 class NaiveTruthReader(object):
+    """Takes a .csv file of filepaths and file labels and returns a
+    list of file directories, filepaths, features, and file labels.
     """
-    Traverses fs, and produces initial dataset for prediction
-    """
-
     def __init__(self, feature_maker, labelfile="naivetruth.csv"):
-        """
-        top_dir - the starting directory, a string
-        feature_maker - an instance of the FileFeature class, where feature
-                        extraction logic is located
-        """
+        """Initializes NaiveTruthReader class.
 
+        Parameters:
+        feature_maker (str): An instance of a FileFeature class to extract
+        features with (HeadBytes, RandBytes, RandHead, Ngram, RandNgram).
+        labelfile (.csv file): .csv file containing filepaths and labels.
+
+        Return:
+        (list): List of filepaths, file names, features, and labels.
+        """
         self.feature = feature_maker
         self.data = []
         self.labelfile = labelfile
-        self.labeldict = {}
+
+    def extract_row_data(self, row):
+        try:
+            with open(row["path"], "rb") as open_file:
+                features = self.feature.get_feature(open_file)
+                row_data = ([os.path.dirname(row["path"]),
+                            os.path.basename(row["path"]), features,
+                            row["file_label"]])
+                print(np.array(row_data).shape)
+                return row_data
+        except (FileNotFoundError, PermissionError):
+            print("Could not open %s" % row["path"])
 
     def run(self):
+        labelf = open(self.labelfile, "r")
 
-        with open(self.labelfile, "r") as labelf:
+        reader = csv.DictReader(labelf)
+        # pools = mp.Pool()
+        #
+        # self.data = pools.map(self.extract_row_data, reader)
+        # pools.close()
+        # pools.join()
+        # for idx, item in enumerate(self.data):
+        #     self.data[idx] = item
+        # print(self.data[0])
+        # print(np.array(self.data).shape)
 
-            reader = csv.DictReader(labelf)
+        for idx, row in enumerate(reader):
+            try:
+                with open(row["path"], "rb") as open_file:
+                    features = self.feature.get_feature(open_file)
+                    row_data = ([os.path.dirname(row["path"]),
+                                 os.path.basename(row["path"]), features,
+                                 row["file_label"]])
+                    print(idx)
+                    self.data.append(row_data)
+            except (FileNotFoundError, PermissionError):
+                print("Could not open %s" % row["path"])
 
-            for row in reader:
-                try:
-                    with open(row["path"], "rb") as open_file:
-                        features = self.feature.get_feature(open_file)
-                        #print("Features are: " + str(features))
-                        append_list = [os.path.dirname(row["path"]), os.path.basename(row["path"]),
-                             features, row["file_label"]]
-
-
-                        self.data.append(append_list)
-                except (FileNotFoundError, PermissionError):
-                    print("Could not open %s" % row["path"])
+        print(np.array(self.data).shape)
 
 
 def get_extension(filename):
-    """
-    get the file extension, separate function bc we may want to be smarter about it
-    at some point
+    """Retrieves the extension of a file.
+
+    Parameter:
+    filename (str): Name of file you want to get extension from.
+
+    Return:
+    (str): File extension of filename.
     """
     if "." not in filename:
         return "None"
     return filename[filename.rfind("."):]
+

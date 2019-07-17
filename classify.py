@@ -1,15 +1,9 @@
-
 import numpy as np
-import pickle as pkl
 from random import shuffle
-
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
-from boto.s3.connection import S3Connection
-from boto.s3.key import Key
-import boto
 
 class ClassifierBuilder(object):
 
@@ -20,7 +14,7 @@ class ClassifierBuilder(object):
     numpy array based format
     """
 
-    def __init__(self, reader, classifier="svc",split=0.8):
+    def __init__(self, reader, classifier="svc", split=0.8):
         """
         reader - the system reader object, must have data already
                  loaded into it (though we could change later)
@@ -43,7 +37,7 @@ class ClassifierBuilder(object):
         shuffle(data)
 
         split_index = int(split*len(data))
-
+        
         train_data = data[:split_index]
         test_data = data[split_index:]
 
@@ -56,15 +50,10 @@ class ClassifierBuilder(object):
         groups = [[train_data, self.X_train, self.Y_train],
                   [test_data, self.X_test, self.Y_test]]
 
-        #train and test
         for group in groups:
             raw_data,X,Y = group
-            #print(raw_data, X,Y)
             for i in range(len(raw_data)):
-                #1print("Raw_Data[i] is " + str(raw_data[i]))
-                #2print("Raw_Data is of length: " + str(len(raw_data[i])))
-                x,y = reader.feature.translate(raw_data[i])
-                #3print("X value is: " + str(x) + " of length " + str(len(x)))
+                x, y = reader.feature.translate(raw_data[i])
                 X[i] = x
                 Y[i] = y
 
@@ -77,16 +66,11 @@ class ClassifierBuilder(object):
         elif self.classifier_type == "logit":
             self.model = LogisticRegression()
         elif self.classifier_type == "rf":
-            #self.model = RandomForestClassifier()
             self.model = RandomForestClassifier(n_estimators=15,
-                                                max_depth = 4000, #Shouldn't overfit with only few trees
-                                                min_samples_split=3
-                                                #oob_score=true, # will be slower
-                                                )
+                                                max_depth=4000, #Shouldn't overfit with only few trees
+                                                min_samples_split=3)
 
         self.model.fit(self.X_train, self.Y_train)
-
-        train_and_save(self.model, self.X_train, self.Y_train, "training_test2.pkl")
 
     def test(self):
        
@@ -116,16 +100,3 @@ class ClassifierBuilder(object):
 
         self.X_test = X[split_index:]
         self.Y_test = Y[split_index:]
-
-
-
-def train_and_save(model, X, y, file_name):
-    """Train the model on the input data and save it for use in the pipeline.
-        :param model: (sklearn.model) model to test
-        :param X: (np.array) data matrix
-        :param y: (np.array) true value column vector
-        :param file_name: (string) file name of model"""
-
-    model.fit(X, y)
-    with open(file_name, "wb") as f:
-        pkl.dump(model, f)
