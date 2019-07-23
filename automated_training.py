@@ -64,6 +64,7 @@ def get_extension(filepath):
     return ext[1:len(ext)]
 
 
+# TODO: Add a 'verbose' mode that actually prints the exceptions.
 def infer_type(filepath):
     if get_extension(filepath) in img_extensions:
         return "image"
@@ -96,12 +97,12 @@ def create_row(filepath):
     return [filepath, os.path.getsize(filepath), infer_type(filepath)]
 
 
-def parallel_infer_type(filepaths_list):
-    for filepath in filepaths_list:
-        return create_row(filepath)
+# def parallel_infer_type(filepaths_list):
+#     for filepath in filepaths_list:
+#         return create_row(filepath)
 
 
-def write_naive_truth(outfile, top_dir, multiprocess=False):
+def write_naive_truth(outfile, top_dir, multiprocess=False, parallelism=1):
     system_reader = SystemReader(top_dir)
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
@@ -110,9 +111,11 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
         csv_writer = csv.writer(f)
         csv_writer.writerow(["path", "size", "file_label"])
 
+
+        # TODO: Cut up the search space beforehand.
         if multiprocess:
-            pools = mp.Pool()
-            list_of_rows = pools.map(parallel_infer_type, system_reader.filepaths)
+            pools = mp.Pool(processes=parallelism)
+            list_of_rows = pools.map(create_row, system_reader.filepaths)
             pools.close()
             pools.join()
             for row in list_of_rows:
@@ -121,12 +124,16 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
             for filepath in system_reader.filepaths:
                 csv_writer.writerow(create_row(filepath))
 
+# TODO: Why are we not detecting file types in /pub8/oceans/SeaSoar/?
 
+file_path = "/Users/tylerskluzacek/pub8/oceans/SeaSoar/"
+# file_path = 'C:/Users/space/Documents/CS/CDAC/official_xtract/'
 
-file_path = 'C:/Users/space/Documents/CS/CDAC/official_xtract/xtract-netcdf'
-write_naive_truth('blah.csv', file_path)
+import time
 
-
-
-
-
+for i in range(1, mp.cpu_count()):
+    print(i)
+    t0 = time.time()
+    write_naive_truth('blah.csv', file_path, True, parallelism=i)
+    t1 = time.time()
+    print(t1-t0)
