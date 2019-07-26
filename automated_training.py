@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import multiprocessing as mp
+import time
 os.chdir('..')
 sys.path.insert(0, 'xtract-jsonxml')
 sys.path.insert(0, 'xtract-netcdf')
@@ -71,69 +72,64 @@ def infer_type(filepath):
     try:
         extract_netcdf_metadata(filepath)
         return "netcdf"
-    except:
+    except Exception as e:
+        print(" netcdf: {}".format(e))
         pass
     try:
         extract_json_metadata(filepath)
         return "json/xml"
-    except:
+    except Exception as e:
+        print(" jsonxml: {}".format(e))
         pass
     try:
-        extract_columnar_metadata(filepath)
+        extract_columnar_metadata(filepath, parallel=True)
         return "tabular"
-    except:
+    except Exception as e:
+        print(" tabular: {}".format(e))
         pass
     try:
         if extract_keyword('file', filepath)["keywords"]:
             return "freetext"
         else:
             pass
-    except:
+    except Exception as e:
+        print(" netcdf: {}".format(e))
         pass
     return "unknown"
 
 
 def create_row(filepath):
-    return [filepath, os.path.getsize(filepath), infer_type(filepath)]
+    t0 = time.time()
+    row = [filepath, os.path.getsize(filepath), infer_type(filepath)]
+    row.append(time.time() - t0)
+    return row
 
 
-# def parallel_infer_type(filepaths_list):
-#     for filepath in filepaths_list:
-#         return create_row(filepath)
-
-
-def write_naive_truth(outfile, top_dir, multiprocess=False, parallelism=1):
+def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader = SystemReader(top_dir)
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
-
     with open(outfile, 'w', newline='') as f:
         csv_writer = csv.writer(f)
-        csv_writer.writerow(["path", "size", "file_label"])
+        csv_writer.writerow(["path", "size", "file_label", "infer_time"])
 
 
         # TODO: Cut up the search space beforehand.
         if multiprocess:
-            pools = mp.Pool(processes=parallelism)
+            pools = mp.Pool()
             list_of_rows = pools.map(create_row, system_reader.filepaths)
             pools.close()
             pools.join()
+
             for row in list_of_rows:
                 csv_writer.writerow(row)
         else:
             for filepath in system_reader.filepaths:
                 csv_writer.writerow(create_row(filepath))
 
-# TODO: Why are we not detecting file types in /pub8/oceans/SeaSoar/?
+file_path = "/Users/Ryan/Documents/CS/CDAC/official_xtract/sampler_dataset/pub8/65DK"
+t0 = time.time()
+write_naive_truth("blah.csv", file_path, multiprocess=False)
+print("total time: {}".format(time.time() - t0))
 
-file_path = "/Users/tylerskluzacek/pub8/oceans/SeaSoar/"
-# file_path = 'C:/Users/space/Documents/CS/CDAC/official_xtract/'
 
-import time
-
-for i in range(1, mp.cpu_count()):
-    print(i)
-    t0 = time.time()
-    write_naive_truth('blah.csv', file_path, True, parallelism=i)
-    t1 = time.time()
-    print(t1-t0)
