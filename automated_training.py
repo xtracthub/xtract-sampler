@@ -73,19 +73,19 @@ def infer_type(filepath):
         extract_netcdf_metadata(filepath)
         return "netcdf"
     except Exception as e:
-        print(" netcdf: {}".format(e))
+        print("{} netcdf: {}".format(filepath, e))
         pass
     try:
         extract_json_metadata(filepath)
         return "json/xml"
     except Exception as e:
-        print(" jsonxml: {}".format(e))
+        print("{} jsonxml: {}".format(filepath, e))
         pass
     try:
-        extract_columnar_metadata(filepath, parallel=True)
+        extract_columnar_metadata(filepath, parallel=False)
         return "tabular"
     except Exception as e:
-        print(" tabular: {}".format(e))
+        print("{} tabular: {}".format(filepath, e))
         pass
     try:
         if extract_keyword('file', filepath)["keywords"]:
@@ -93,7 +93,7 @@ def infer_type(filepath):
         else:
             pass
     except Exception as e:
-        print(" netcdf: {}".format(e))
+        print("{} freetext: {}".format(filepath, e))
         pass
     return "unknown"
 
@@ -102,6 +102,7 @@ def create_row(filepath):
     t0 = time.time()
     row = [filepath, os.path.getsize(filepath), infer_type(filepath)]
     row.append(time.time() - t0)
+    print(row)
     return row
 
 
@@ -109,6 +110,13 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader = SystemReader(top_dir)
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
+    with open('files_to_parse.csv', 'w', newline='') as d:
+        csv_writer = csv.writer(d)
+        for file in system_reader.filepaths:
+            csv_writer.writerow(file)
+    print("done writing file paths")
+
+    t0 = time.time()
     with open(outfile, 'w', newline='') as f:
         csv_writer = csv.writer(f)
         csv_writer.writerow(["path", "size", "file_label", "infer_time"])
@@ -126,10 +134,12 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
         else:
             for filepath in system_reader.filepaths:
                 csv_writer.writerow(create_row(filepath))
+        csv_writer.writerow([time.time() - t0])
 
-file_path = "/Users/Ryan/Documents/CS/CDAC/official_xtract/sampler_dataset/pub8/65DK"
+
+file_path = "/Users/Ryan/Desktop/oceans/"
 t0 = time.time()
-write_naive_truth("blah.csv", file_path, multiprocess=False)
+write_naive_truth("oceans_init.csv", file_path, multiprocess=True)
 print("total time: {}".format(time.time() - t0))
 
 
