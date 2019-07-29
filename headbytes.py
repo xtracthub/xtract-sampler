@@ -52,6 +52,7 @@ class HeadBytes(FeatureMaker):
         entry and a dictionary of labels and indices.
         """
         x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
+        print(entry)
         try:
             y = self.class_table[entry[-1]]
         except KeyError:

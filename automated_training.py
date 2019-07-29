@@ -110,11 +110,6 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader = SystemReader(top_dir)
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
-    with open('files_to_parse.csv', 'w', newline='') as d:
-        csv_writer = csv.writer(d)
-        for file in system_reader.filepaths:
-            csv_writer.writerow(file)
-    print("done writing file paths")
 
     t0 = time.time()
     with open(outfile, 'w', newline='') as f:

@@ -11,7 +11,7 @@ from train_model import ModelTrainer
 from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
-from predict import predict_single_file
+from predict import predict_single_file, predict_directory
 
 # Current time for documentation purposes
 current_time = datetime.datetime.today().strftime('%Y-%m-%d')
@@ -20,7 +20,7 @@ current_time = datetime.datetime.today().strftime('%Y-%m-%d')
 def main():
     parser = argparse.ArgumentParser(description='Run file classification experiments')
 
-    parser.add_argument("--dirname", type=str, help="")
+    parser.add_argument("--dirname", type=str, help="directory of files to predict", default=None)
     parser.add_argument("--n", type=int, default=1,
                         help="number of trials", dest="n")
     parser.add_argument("--classifier", type=str,
@@ -55,6 +55,17 @@ def main():
             return
         print(predict_single_file(args.predict_file, trained_classifier,
                                   args.feature))
+    elif args.dirname is not None:
+        try:
+            with open(args.trained_classifier, 'rb') as classifier_file:
+                trained_classifier = pkl.load(classifier_file)
+        except:
+            print("Invalid trained classifier")
+
+        if args.feature not in ["head", "rand", "randhead"]:
+            print("Invalid feature option %s" % args.feature)
+            return
+        print(predict_directory(args.dirname, trained_classifier, args.feature))
     else:
         if args.classifier not in ["svc", "logit", "rf"]:
             print("Invalid classifier option %s" % args.classifier)

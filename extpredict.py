@@ -34,7 +34,7 @@ class FileReader(object):
             with open(filename, "rb") as open_file:
                 extension = get_extension(filename)
                 features = self.feature.get_feature(open_file)
-                return (['/home/skluzacek', 'newfile.csv', features, extension])
+                return ([os.path.basename(filename), filename, features, extension])
 
         except (FileNotFoundError, PermissionError):
             pass
@@ -76,7 +76,6 @@ class SystemReader(object):
 
         try:
             with open(os.path.join(current_dir, filename), "rb") as open_file:
-
                 extension = get_extension(filename)
                 features = self.feature.get_feature(open_file)
                 self.data.append([current_dir, filename, features, extension])
@@ -119,7 +118,7 @@ class NaiveTruthReader(object):
     """Takes a .csv file of filepaths and file labels and returns a
     list of file directories, filepaths, features, and file labels.
     """
-    def __init__(self, feature_maker, labelfile="naivetruth.csv"):
+    def __init__(self, feature_maker, labelfile="new_naivetruth.csv"):
         """Initializes NaiveTruthReader class.
 
         Parameters:
@@ -141,7 +140,6 @@ class NaiveTruthReader(object):
                 row_data = ([os.path.dirname(row["path"]),
                             os.path.basename(row["path"]), features,
                             row["file_label"]])
-                print(np.array(row_data).shape)
                 return row_data
         except (FileNotFoundError, PermissionError):
             print("Could not open %s" % row["path"])
@@ -167,12 +165,10 @@ class NaiveTruthReader(object):
                     row_data = ([os.path.dirname(row["path"]),
                                  os.path.basename(row["path"]), features,
                                  row["file_label"]])
-                    print(idx)
                     self.data.append(row_data)
             except (FileNotFoundError, PermissionError):
                 print("Could not open %s" % row["path"])
 
-        print(np.array(self.data).shape)
 
 
 def get_extension(filename):
