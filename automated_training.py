@@ -6,11 +6,11 @@ import time
 os.chdir('..')
 sys.path.insert(0, 'xtract-jsonxml')
 sys.path.insert(0, 'xtract-netcdf')
-sys.path.insert(0, 'xtract-keyword')
+sys.path.insert(0, 'xtract-keyword-rake')
 sys.path.insert(0, 'xtract-tabular')
 from xtract_tabular_main import extract_columnar_metadata
 from xtract_jsonxml_main import extract_json_metadata
-from xtract_keyword_main import extract_keyword
+from xtract_keyword_rake_main import extract_keyword_rake
 from xtract_netcdf_main import extract_netcdf_metadata
 os.chdir('xtract-sampler')
 
@@ -88,7 +88,7 @@ def infer_type(filepath):
         print("{} tabular: {}".format(filepath, e))
         pass
     try:
-        if extract_keyword('file', filepath)["keywords"]:
+        if extract_keyword_rake(filepath)["keywords"]:
             return "freetext"
         else:
             pass
@@ -132,9 +132,9 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
         csv_writer.writerow([time.time() - t0])
 
 
-file_path = "/Users/Ryan/Desktop/oceans/"
+file_path = "/Users/Ryan/Documents/CS/CDAC/official_xtract/sampler_dataset/pub8/CdiacBundles/"
 t0 = time.time()
-write_naive_truth("oceans_init.csv", file_path, multiprocess=True)
+write_naive_truth("new_cdiac_bundles.csv", file_path, multiprocess=True)
 print("total time: {}".format(time.time() - t0))
 
 

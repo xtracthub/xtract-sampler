@@ -44,18 +44,19 @@ def predict_single_file(filename, trained_classifier, feature):
     return label
 
 
-def predict_directory(dir_name, trained_classifier, feature):
+def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, rand_bytes=512):
     file_predictions = {}
 
     with open('new_CLASS_TABLE.json', 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":
-        features = HeadBytes()
+        features = HeadBytes(head_size=head_bytes)
     elif feature == "randhead":
-        features = RandHead()
+        features = RandHead(head_size=head_bytes,
+                            rand_size=rand_bytes)
     elif feature == "rand":
-        features = RandBytes()
+        features = RandBytes(number_bytes=rand_bytes)
     else:
         raise Exception("Not a valid feature set. ")
 
@@ -63,17 +64,26 @@ def predict_directory(dir_name, trained_classifier, feature):
     reader.run()
 
     for file_data in reader.data:
-        data = [line for line in file_data][2]
-        le = preprocessing.LabelEncoder()  # TODO: Check efficacy. Don't use encoder when training...
+        if os.path.splitext(file_data[1])[1] == ".nc":
+            file_predictions[os.path.join(file_data[0], file_data[1])] = "netcdf"
+        elif os.path.splitext(file_data[1])[1] in [".json", ".xml"]:
+            file_predictions[os.path.join(file_data[0], file_data[1])] = "jsonxml"
+        elif os.path.splitext(file_data[1])[1] in [".jpg", ".png", ".gif", ".bmp", ".jpeg", ".tif", ".tiff", ".jif",
+                  ".jfif", ".jp2", ".jpx", ".j2k", ".j2c", ".fpx", ".pcd"]:
+            file_predictions[os.path.join(file_data[0], file_data[1])] = "image"
+        else:
 
-        x = np.array(data)
-        x = le.fit_transform(x)
-        x = [x]
+            data = [line for line in file_data][2]
 
-        prediction = trained_classifier.predict(x)
-        print(prediction)
-        label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-        print(label, os.path.join(file_data[0], file_data[1]))
-        file_predictions[os.path.join(file_data[0], file_data[1])] = label
+            le = preprocessing.LabelEncoder()  # TODO: Check efficacy. Don't use encoder when training...
+
+            x = np.array(data)
+            x = le.fit_transform(x)
+            x = [x]
+
+            prediction = trained_classifier.predict(x)
+            label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
+            print(label, os.path.join(file_data[0], file_data[1]))
+            file_predictions[os.path.join(file_data[0], file_data[1])] = label
 
     return file_predictions

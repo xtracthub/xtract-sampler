@@ -11,6 +11,7 @@ from train_model import ModelTrainer
 from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
+from consec_bytes import ConsecBytes
 from predict import predict_single_file, predict_directory
 
 # Current time for documentation purposes
@@ -26,15 +27,19 @@ def main():
     parser.add_argument("--classifier", type=str,
                         help="model to use: svc, logit, rf")
     parser.add_argument("--feature", type=str, default="head",
-                        help="feature to use: head, rand, randhead")
+                        help="feature to use: head, rand, randhead, consec_bytes")
     parser.add_argument("--split", type=float, default=0.8,
                         help="test/train split ratio", dest="split")
-    parser.add_argument("--head-bytes", type=int, default=512,
+    parser.add_argument("--head_bytes", type=int, default=512,
                         dest="head_bytes",
                         help="size of file head in bytes, default 512")
-    parser.add_argument("--rand-bytes", type=int, default=512,
+    parser.add_argument("--rand_bytes", type=int, default=512,
                         dest="rand_bytes",
                         help="number of random bytes, default 512")
+    parser.add_argument("--consec_bytes", help="number of total consecutive bytes, default 512",
+                        default=512)
+    parser.add_argument("--nconsec", help="number of consecutive bytes, default 4",
+                        default=4)
     parser.add_argument("--predict_file", type=str, default=None,
                         help="file to predict based on a classifier and a "
                              "feature")
@@ -50,7 +55,7 @@ def main():
         except:
             print("Invalid trained classifier")
 
-        if args.feature not in ["head", "rand", "randhead"]:
+        if args.feature not in ["head", "rand", "randhead", "consec_bytes"]:
             print("Invalid feature option %s" % args.feature)
             return
         print(predict_single_file(args.predict_file, trained_classifier,
@@ -62,10 +67,12 @@ def main():
         except:
             print("Invalid trained classifier")
 
-        if args.feature not in ["head", "rand", "randhead"]:
+        if args.feature not in ["head", "rand", "randhead", "consec_bytes"]:
             print("Invalid feature option %s" % args.feature)
             return
-        print(predict_directory(args.dirname, trained_classifier, args.feature))
+        with open("prediction_results.json", 'w') as prediction_file:
+            json.dump(predict_directory(args.dirname, trained_classifier, args.feature, head_bytes=args.head_bytes,
+                                        rand_bytes=args.rand_bytes), prediction_file)
     else:
         if args.classifier not in ["svc", "logit", "rf"]:
             print("Invalid classifier option %s" % args.classifier)
@@ -78,6 +85,9 @@ def main():
         elif args.feature == "randhead":
             features = RandHead(head_size=args.head_bytes,
                                 rand_size=args.rand_bytes)
+        elif args.feature == "consec_bytes":
+            features = ConsecBytes(number_bytes=args.consec_bytes,
+                                   n_consec=args.nconsec)
         else:
             print("Invalid feature option %s" % args.feature)
             return

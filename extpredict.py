@@ -170,7 +170,6 @@ class NaiveTruthReader(object):
                 print("Could not open %s" % row["path"])
 
 
-
 def get_extension(filename):
     """Retrieves the extension of a file.
 

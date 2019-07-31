@@ -3,6 +3,7 @@ from feature import FeatureMaker
 from random import randint
 import numpy as np
 
+
 class RandBytes(FeatureMaker):
     """Retrieves random bytes from a file."""
     def __init__(self, number_bytes=512):
@@ -29,7 +30,7 @@ class RandBytes(FeatureMaker):
         size = getsize(open_file.name)
 
         if size == 0:
-           raise FileNotFoundError()              
+            raise FileNotFoundError()
         else:
             rand_index = [randint(0, size-1) for _ in range(self.nfeatures)]
 
@@ -49,16 +50,13 @@ class RandBytes(FeatureMaker):
         """Translates a feature into an integer.
 
         Parameter:
-        entry (byte): A feature.
+        entry (list): A list of a file path, file name, list of bytes, and a label.
 
         Return:
         (tuple): 2-tuple of a numpy array containing an integer version of
         entry and a dictionary of labels and indices.
         """
-        try:
-            x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
-        except:
-            print("x fail")
+        x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
         
         try:
             y = self.class_table[entry[-1]]

@@ -1,4 +1,5 @@
 import numpy as np
+import json
 from random import shuffle
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
@@ -42,6 +43,9 @@ class ModelTrainer(object):
                 x, y = reader.feature.translate(raw_data[i])
                 X[i] = x
                 Y[i] = y
+
+        with open("new_CLASS_TABLE.json", 'w') as class_table:
+            json.dump(reader.feature.class_table, class_table)
 
     def train(self):
         """Trains the model."""

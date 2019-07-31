@@ -23,7 +23,8 @@ class HeadBytes(FeatureMaker):
 
         Return:
         head (list): A list of the first head_size bytes in
-        open_file. If there are less than head_size bytes in
+        open_file.
+        If there are less than head_size bytes in
         open_file, the remainder of head is filled with empty bytes.
         """
         byte = open_file.read(1) 
@@ -52,11 +53,12 @@ class HeadBytes(FeatureMaker):
         entry and a dictionary of labels and indices.
         """
         x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
-        print(entry)
+        print(x)
         try:
             y = self.class_table[entry[-1]]
         except KeyError:
             self.class_table[entry[-1]] = len(self.class_table) + 1
             y = self.class_table[entry[-1]]
+
         return np.array(x), y
 
