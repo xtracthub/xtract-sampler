@@ -41,7 +41,7 @@ class RandHead(FeatureMaker):
         size = getsize(open_file.name)
 
         if size == 0:
-            raise FileNotFoundError()
+            return [b'' for i in range(self.nfeatures)]
 
         if size > self.head_size:
             rand_index = [randint(self.head_size, size-1) for _ in range(self.rand_size)]

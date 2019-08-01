@@ -55,10 +55,8 @@ def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, ran
         features = RandBytes(number_bytes=rand_bytes)
     else:
         raise Exception("Not a valid feature set. ")
-
     reader = SystemReader(feature_maker=features, top_dir=dir_name)
     reader.run()
-
     for file_data in reader.data:
 
         data = [line for line in file_data][2]

@@ -30,7 +30,7 @@ class RandBytes(FeatureMaker):
         size = getsize(open_file.name)
 
         if size == 0:
-            raise FileNotFoundError()
+            return [b'' for i in range(self.nfeatures)]
         else:
             rand_index = [randint(0, size-1) for _ in range(self.nfeatures)]
 

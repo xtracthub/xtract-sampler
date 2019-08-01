@@ -42,7 +42,7 @@ class ModelTrainer(object):
                 X[i] = x
                 Y[i] = y
 
-        with open("new_CLASS_TABLE.json", 'w') as class_table:
+        with open("CLASS_TABLE.json", 'w') as class_table:
             json.dump(reader.feature.class_table, class_table)
 
     def train(self):
