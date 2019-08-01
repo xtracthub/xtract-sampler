@@ -1,1 +1,0 @@
-{"Classifier": "rf", "Feature": "head", "Trial": 0, "Read time": 2.8557770252227783, "Train and test time": 0.4402639865875244, "Model accuracy": 0.9499217527386542, "Model size": 730159}{"Classifier": "rf", "Feature": "head", "Trial": 0, "Read time": 1.0035858154296875, "Train and test time": 0.44974279403686523, "Model accuracy": 0.9436619718309859, "Model size": 680655}

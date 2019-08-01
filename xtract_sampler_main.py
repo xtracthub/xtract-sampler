@@ -11,7 +11,6 @@ from train_model import ModelTrainer
 from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
-from consec_bytes import ConsecBytes
 from predict import predict_single_file, predict_directory
 
 # Current time for documentation purposes
@@ -27,7 +26,7 @@ def main():
     parser.add_argument("--classifier", type=str,
                         help="model to use: svc, logit, rf")
     parser.add_argument("--feature", type=str, default="head",
-                        help="feature to use: head, rand, randhead, consec_bytes")
+                        help="feature to use: head, rand, randhead")
     parser.add_argument("--split", type=float, default=0.8,
                         help="test/train split ratio", dest="split")
     parser.add_argument("--head_bytes", type=int, default=512,
@@ -36,16 +35,14 @@ def main():
     parser.add_argument("--rand_bytes", type=int, default=512,
                         dest="rand_bytes",
                         help="number of random bytes, default 512")
-    parser.add_argument("--consec_bytes", help="number of total consecutive bytes, default 512",
-                        default=512)
-    parser.add_argument("--nconsec", help="number of consecutive bytes, default 4",
-                        default=4)
     parser.add_argument("--predict_file", type=str, default=None,
                         help="file to predict based on a classifier and a "
                              "feature")
     parser.add_argument("--trained_classifier", type=str,
                         help="trained classifier to predict on",
                         default='rf-head-default.pkl')
+    parser.add_argument("--results_file", type=str,
+                        default="sampler_results.json", help="Name for results file if predicting")
     args = parser.parse_args()
 
     if args.predict_file is not None:
@@ -55,9 +52,12 @@ def main():
         except:
             print("Invalid trained classifier")
 
-        if args.feature not in ["head", "rand", "randhead", "consec_bytes"]:
+        if args.feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % args.feature)
             return
+        with open(args.results_file, 'w') as prediction_file:
+            json.dump(predict_single_file(args.dirname, trained_classifier, args.feature, head_bytes=args.head_bytes,
+                                          rand_bytes=args.rand_bytes), prediction_file)
         print(predict_single_file(args.predict_file, trained_classifier,
                                   args.feature))
     elif args.dirname is not None:
@@ -67,10 +67,10 @@ def main():
         except:
             print("Invalid trained classifier")
 
-        if args.feature not in ["head", "rand", "randhead", "consec_bytes"]:
+        if args.feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % args.feature)
             return
-        with open("prediction_results.json", 'w') as prediction_file:
+        with open(args.results_file, 'w') as prediction_file:
             json.dump(predict_directory(args.dirname, trained_classifier, args.feature, head_bytes=args.head_bytes,
                                         rand_bytes=args.rand_bytes), prediction_file)
     else:
@@ -85,9 +85,6 @@ def main():
         elif args.feature == "randhead":
             features = RandHead(head_size=args.head_bytes,
                                 rand_size=args.rand_bytes)
-        elif args.feature == "consec_bytes":
-            features = ConsecBytes(number_bytes=args.consec_bytes,
-                                   n_consec=args.nconsec)
         else:
             print("Invalid feature option %s" % args.feature)
             return
@@ -119,9 +116,7 @@ def experiment(reader, classifier_name, features, trials, split):
     (json): Writes a json named outfile with training and testing data.
     """
     read_start_time = time.time()
-    print("reading")
     reader.run()
-    print("done reading")
     read_time = time.time() - read_start_time
     print(read_time)
     classifier = ModelTrainer(reader, classifier=classifier_name, split=split)

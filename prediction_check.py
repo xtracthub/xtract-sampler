@@ -2,7 +2,7 @@ import csv
 import json
 
 prediction_results_file = open('prediction_results.json', 'r')
-true_reults_file = csv.reader(open('new_naivetruth.csv', 'r'))
+true_reults_file = csv.reader(open('cdiac_bundles.csv', 'r'))
 
 prediction_results_dict = json.load(prediction_results_file)
 true_reults_dict = {}
@@ -22,8 +22,8 @@ for result in true_reults_dict:
         else:
             #print("{}: {}".format(result, prediction_results_dict.get(result)))
             #print("{}: {}".format(result, true_reults_dict.get(result)))
-            print(prediction_results_dict.get(result))
-            print(true_reults_dict.get(result))
+            print("Preiction: {}".format(prediction_results_dict.get(result)))
+            print("True: {}".format(true_reults_dict.get(result)))
             wrong_count += 1
         total_count += 1
     except Exception as e:

@@ -7,7 +7,7 @@ from headbytes import HeadBytes
 class RandHead(FeatureMaker):
     """Retrieves bytes from the head of a file and random bytes from
     subsequent sections."""
-    def __init__(self,head_size=512, rand_size=512):
+    def __init__(self, head_size=512, rand_size=512):
         """Initializes RandHead class.
 
         Parameters:
@@ -59,4 +59,6 @@ class RandHead(FeatureMaker):
         return sample_bytes
 
     def translate(self, entry):
-        return self._head.translate(entry)
+        x, y = self._head.translate(entry)
+        self.class_table = self._head.class_table
+        return x, y

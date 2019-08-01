@@ -24,14 +24,12 @@ class ModelTrainer(object):
         shuffle(data)
 
         split_index = int(split * len(data))
-
         train_data = data[:split_index]
         test_data = data[split_index:]
-
-        self.X_train = np.zeros((len(train_data), reader.feature.nfeatures))
+        self.X_train = np.zeros((len(train_data), reader.feature.nfeatures + 0))
         self.Y_train = np.zeros(len(train_data))
 
-        self.X_test = np.zeros((len(test_data), reader.feature.nfeatures))
+        self.X_test = np.zeros((len(test_data), reader.feature.nfeatures + 0))
         self.Y_test = np.zeros(len(test_data))
 
         groups = [[train_data, self.X_train, self.Y_train],

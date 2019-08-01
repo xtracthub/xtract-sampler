@@ -1,6 +1,6 @@
 import os
 import csv
-import numpy as np
+import multiprocessing as mp
 
 
 class FileReader(object):
@@ -34,7 +34,7 @@ class FileReader(object):
             with open(filename, "rb") as open_file:
                 extension = get_extension(filename)
                 features = self.feature.get_feature(open_file)
-                return ([os.path.basename(filename), filename, features, extension])
+                return [os.path.basename(filename), filename, features, extension]
 
         except (FileNotFoundError, PermissionError):
             pass
@@ -118,7 +118,7 @@ class NaiveTruthReader(object):
     """Takes a .csv file of filepaths and file labels and returns a
     list of file directories, filepaths, features, and file labels.
     """
-    def __init__(self, feature_maker, labelfile="new_naivetruth.csv"):
+    def __init__(self, feature_maker, labelfile="oceans_init copy.csv"):
         """Initializes NaiveTruthReader class.
 
         Parameters:
@@ -148,26 +148,12 @@ class NaiveTruthReader(object):
         labelf = open(self.labelfile, "r")
 
         reader = csv.DictReader(labelf)
-        # pools = mp.Pool()
-        #
-        # self.data = pools.map(self.extract_row_data, reader)
-        # pools.close()
-        # pools.join()
-        # for idx, item in enumerate(self.data):
-        #     self.data[idx] = item
-        # print(self.data[0])
-        # print(np.array(self.data).shape)
-
-        for idx, row in enumerate(reader):
-            try:
-                with open(row["path"], "rb") as open_file:
-                    features = self.feature.get_feature(open_file)
-                    row_data = ([os.path.dirname(row["path"]),
-                                 os.path.basename(row["path"]), features,
-                                 row["file_label"]])
-                    self.data.append(row_data)
-            except (FileNotFoundError, PermissionError):
-                print("Could not open %s" % row["path"])
+        pools = mp.Pool(processes=mp.cpu_count())
+        self.data = pools.map(self.extract_row_data, reader)
+        pools.close()
+        pools.join()
+        for idx, item in enumerate(self.data):
+            self.data[idx] = item
 
 
 def get_extension(filename):

@@ -5,10 +5,9 @@ from headbytes import HeadBytes
 from extpredict import FileReader, SystemReader
 from randbytes import RandBytes
 from randhead import RandHead
-from sklearn import preprocessing
 
 
-def predict_single_file(filename, trained_classifier, feature):
+def predict_single_file(filename, trained_classifier, feature, head_bytes=512, rand_bytes=512):
     """Predicts the type of file.
 
     filename (str): Name of file to predict the type of.
@@ -16,15 +15,15 @@ def predict_single_file(filename, trained_classifier, feature):
     feature (str): Type of feature that trained_classifier was trained on.
     """
 
-    with open('new_CLASS_TABLE.json', 'r') as f:
+    with open('CLASS_TABLE.json', 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":
-        features = HeadBytes()
+        features = HeadBytes(head_size=head_bytes)
     elif feature == "randhead":
-        features = RandHead()
+        features = RandHead(head_size=head_bytes, rand_size=rand_bytes)
     elif feature == "rand":
-        features = RandBytes()
+        features = RandBytes(number_bytes=rand_bytes)
     else:
         raise Exception("Not a valid feature set. ")
 
@@ -32,10 +31,7 @@ def predict_single_file(filename, trained_classifier, feature):
     reader.run()
 
     data = [line for line in reader.data][2]
-    le = preprocessing.LabelEncoder()  # TODO: Check efficacy. Don't use encoder when training...
-
-    x = np.array(data)
-    x = le.fit_transform(x)
+    x = np.array([int.from_bytes(c, byteorder="big") for c in data])
     x = [x]
 
     prediction = trained_classifier.predict(x)
@@ -64,26 +60,14 @@ def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, ran
     reader.run()
 
     for file_data in reader.data:
-        if os.path.splitext(file_data[1])[1] == ".nc":
-            file_predictions[os.path.join(file_data[0], file_data[1])] = "netcdf"
-        elif os.path.splitext(file_data[1])[1] in [".json", ".xml"]:
-            file_predictions[os.path.join(file_data[0], file_data[1])] = "jsonxml"
-        elif os.path.splitext(file_data[1])[1] in [".jpg", ".png", ".gif", ".bmp", ".jpeg", ".tif", ".tiff", ".jif",
-                  ".jfif", ".jp2", ".jpx", ".j2k", ".j2c", ".fpx", ".pcd"]:
-            file_predictions[os.path.join(file_data[0], file_data[1])] = "image"
-        else:
 
-            data = [line for line in file_data][2]
+        data = [line for line in file_data][2]
 
-            le = preprocessing.LabelEncoder()  # TODO: Check efficacy. Don't use encoder when training...
+        x = np.array([int.from_bytes(c, byteorder="big") for c in data])
+        x = [x]
 
-            x = np.array(data)
-            x = le.fit_transform(x)
-            x = [x]
-
-            prediction = trained_classifier.predict(x)
-            label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-            print(label, os.path.join(file_data[0], file_data[1]))
-            file_predictions[os.path.join(file_data[0], file_data[1])] = label
+        prediction = trained_classifier.predict(x)
+        label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
+        file_predictions[os.path.join(file_data[0], file_data[1])] = label
 
     return file_predictions
