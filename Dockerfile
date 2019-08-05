@@ -1,5 +1,4 @@
 FROM python:latest
-
  
 MAINTAINER Ryan Wong
 
