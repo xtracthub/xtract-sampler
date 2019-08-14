@@ -123,9 +123,10 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
 
-    with open(outfile, 'w', newline='') as f:
+    with open(outfile, 'a', newline='') as f:
         csv_writer = csv.writer(f)
-        csv_writer.writerow(["path", "size", "file_label", "infer_time"])
+        if os.path.getsize(outfile) == 0:
+            csv_writer.writerow(["path", "size", "file_label", "infer_time"])
 
 
         # TODO: Cut up the search space beforehand.
@@ -144,9 +145,6 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
     print("Automated training time: {}".format(time.time() - t0))
 
 
-file_path = "/Users/ryan/Documents/CS/CDAC/official_xtract/nist_dataset"
-t0 = time.time()
-write_naive_truth("nist_subset.csv", file_path, multiprocess=True)
-print("total time: {}".format(time.time() - t0))
+
 
 

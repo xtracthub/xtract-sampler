@@ -12,12 +12,13 @@ from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
 from predict import predict_single_file, predict_directory
+from automated_training import write_naive_truth
 
 # Current time for documentation purposes
 current_time = datetime.datetime.today().strftime('%Y-%m-%d')
 
 
-def experiment(reader, classifier_name, features, trials, split, model_name):
+def experiment(reader, classifier_name, features, trials, split, model_name, features_outfile):
     """Trains classifier_name on features from files in reader trials number
     of times and saves the model and returns training and testing data.
 
@@ -39,7 +40,8 @@ def experiment(reader, classifier_name, features, trials, split, model_name):
     (json): Writes a json named outfile with training and testing data.
     """
     read_start_time = time.time()
-    reader.run()
+    if features_outfile is None:
+        reader.run()
     read_time = time.time() - read_start_time
     classifier = ModelTrainer(reader, classifier=classifier_name, split=split)
 
@@ -73,10 +75,11 @@ def experiment(reader, classifier_name, features, trials, split, model_name):
             classifier.shuffle()
 
 
-def extract_sampler(classifier='rf', feature='head', model_name=None, n=1, head_bytes=512, rand_bytes=512,
+def extract_sampler(mode='train', classifier='rf', feature='head', model_name=None, n=1, head_bytes=512, rand_bytes=512,
                     split=0.8, label_csv=None, dirname=None, predict_file=None,
-                    trained_classifier='rf-head-default.pkl', results_file='sampler_results.json'):
-    if predict_file is not None:
+                    trained_classifier='rf-head-default.pkl', results_file='sampler_results.json',
+                    csv_outfile='naivetruth.csv', features_outfile=None):
+    if mode == 'predict' and predict_file is not None:
         try:
             with open(trained_classifier, 'rb') as classifier_file:
                 trained_classifier = pkl.load(classifier_file)
@@ -91,7 +94,7 @@ def extract_sampler(classifier='rf', feature='head', model_name=None, n=1, head_
                                           rand_bytes=rand_bytes), prediction_file)
         print(predict_single_file(predict_file, trained_classifier,
                                   feature))
-    elif dirname is not None:
+    elif mode == 'predict' and dirname is not None:
         try:
             with open(trained_classifier, 'rb') as classifier_file:
                 trained_classifier = pkl.load(classifier_file)
@@ -104,7 +107,7 @@ def extract_sampler(classifier='rf', feature='head', model_name=None, n=1, head_
         with open(results_file, 'w') as prediction_file:
             json.dump(predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
                                         rand_bytes=rand_bytes), prediction_file)
-    else:
+    elif mode == 'train':
         if classifier not in ["svc", "logit", "rf"]:
             print("Invalid classifier option %s" % classifier)
             return
@@ -121,17 +124,61 @@ def extract_sampler(classifier='rf', feature='head', model_name=None, n=1, head_
             return
 
         if model_name is None:
-            model_name = "{}-{}-trial{}-{}.pkl".format(classifier, features, current_time)
+            model_name = "{}-{}-trial{}.pkl".format(classifier, features, current_time)
 
-        reader = NaiveTruthReader(features, labelfile=label_csv)
+        if os.path.exists(features_outfile):
+            try:
+                with open(features_outfile, 'rb') as f:
+                    reader = pkl.load(f)
+            except:
+                print("Invalid features outfile")
+                return
+        else:
+            reader = NaiveTruthReader(features, labelfile=label_csv)
+        print(type(reader))
         experiment(reader, classifier, feature, n,
-                   split, model_name)
+                   split, model_name, features_outfile)
+
+    elif mode == 'labels_features':
+        write_naive_truth(csv_outfile, dirname, multiprocess=True)
+
+        if feature == "head":
+            features = HeadBytes(head_size=head_bytes)
+        elif feature == "rand":
+            features = RandBytes(number_bytes=rand_bytes)
+        elif feature == "randhead":
+            features = RandHead(head_size=head_bytes,
+                                rand_size=rand_bytes)
+        else:
+            print("Invalid feature option %s" % feature)
+            return
+
+        reader = NaiveTruthReader(features, labelfile=csv_outfile)
+        reader.run()
+
+        try:
+            if os.path.getsize(features_outfile) > 0:
+                with open(features_outfile, 'rb') as f:
+                    print('got here')
+                    reader_object = pkl.load(f)
+                with open(features_outfile, 'wb') as f:
+                    print('got there')
+                    reader_object.data.extend(reader.data)
+                    print(reader_object.data)# TODO figure out why it doesn't save the data correctly
+                    pkl.dump(reader_object, f)
+            else:
+                with open(features_outfile, 'ab') as f:
+                    pkl.dump(reader, f)
+        except:
+            with open(features_outfile, 'ab') as f:
+                pkl.dump(reader, f)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run file classification experiments')
 
-    parser.add_argument("--dirname", type=str, help="directory of files to predict", default=None)
+    parser.add_argument("--dirname", type=str, help="directory of files to predict if mode is predict"
+                                                    "or directory to get labels and features of", default=None)
     parser.add_argument("--n", type=int, default=1,
                         help="number of trials", dest="n")
     parser.add_argument("--classifier", type=str,
@@ -156,11 +203,18 @@ if __name__ == '__main__':
                         default="sampler_results.json", help="Name for results file if predicting")
     parser.add_argument("--label_csv", type=str, help="Name of csv file with labels",
                         default="automated_training_results/naivetruth.csv")
+    parser.add_argument("--csv_outfile", type=str, help="file to write labels to",
+                        default='naivetruth.csv')
     parser.add_argument("--model_name", type=str, help="Name of model",
+                        default=None)
+    parser.add_argument("--mode", type=str, help="Mode (train, predict, labels_features)",
+                        default='train')
+    parser.add_argument("--features_outfile", type=str, help="file to write features to if mode is labels_feautres"
+                                                             "else it's a pkl with a reader object",
                         default=None)
     args = parser.parse_args()
 
-    extract_sampler(args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
+    extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
                     args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
-                    args.trained_classifier, args.results_file)
+                    args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
 

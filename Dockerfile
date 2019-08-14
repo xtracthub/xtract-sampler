@@ -9,7 +9,8 @@ RUN mkdir xtract-sampler/automated_training_results/
 COPY automated_training_results/naivetruth.csv xtract-sampler/automated_training_results/
 COPY classify.py extpredict.py feature.py headbytes.py xtract_sampler_main.py \
      predict.py randbytes.py randhead.py test_model.py train_model.py \
-     rf-head-default.pkl xtract-sampler/
+     rf-head-default.pkl automated_training.py timeout.py CLASS_TABLE.json\
+     words_dictionary.json stop-words-en.txt xtract-sampler/
 COPY requirements.txt /
 
 RUN git clone https://github.com/xtracthub/xtract-tabular && git clone https://github.com/xtracthub/xtract-jsonxml \
