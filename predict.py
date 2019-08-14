@@ -43,7 +43,7 @@ def predict_single_file(filename, trained_classifier, feature, head_bytes=512, r
 def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, rand_bytes=512):
     file_predictions = {}
 
-    with open('new_CLASS_TABLE.json', 'r') as f:
+    with open('CLASS_TABLE.json', 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":

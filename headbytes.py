@@ -52,6 +52,7 @@ class HeadBytes(FeatureMaker):
         (tuple): 2-tuple of a numpy array containing an integer version of
         entry and a dictionary of labels and indices.
         """
+        #print(entry)
         x = [int.from_bytes(c, byteorder="big") for c in entry[2]]
 
         try:

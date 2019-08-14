@@ -118,7 +118,7 @@ class NaiveTruthReader(object):
     """Takes a .csv file of filepaths and file labels and returns a
     list of file directories, filepaths, features, and file labels.
     """
-    def __init__(self, feature_maker, labelfile="oceans_init copy.csv"):
+    def __init__(self, feature_maker, labelfile="naivetruth.csv"):
         """Initializes NaiveTruthReader class.
 
         Parameters:
