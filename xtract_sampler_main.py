@@ -34,6 +34,8 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
     for each training.
     split (float): Float between 0 and 1 which indicates how much data to
     use for training. The rest is used as a testing set.
+    features_oufile (str): File path to .pkl file where a reader class is
+    stored.
 
     Return:
     (pkl): Writes a pkl file containing the model.
@@ -159,12 +161,10 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         try:
             if os.path.getsize(features_outfile) > 0:
                 with open(features_outfile, 'rb') as f:
-                    print('got here')
                     reader_object = pkl.load(f)
                 with open(features_outfile, 'wb') as f:
-                    print('got there')
                     reader_object.data.extend(reader.data)
-                    print(reader_object.data)# TODO figure out why it doesn't save the data correctly
+                    print(reader_object.data)
                     pkl.dump(reader_object, f)
             else:
                 with open(features_outfile, 'ab') as f:
@@ -172,6 +172,8 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         except:
             with open(features_outfile, 'ab') as f:
                 pkl.dump(reader, f)
+
+        print("Done saving features")
 
 
 if __name__ == '__main__':
