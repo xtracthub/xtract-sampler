@@ -22,7 +22,6 @@ class ModelTrainer(object):
 
         data = [line for line in reader.data]
         shuffle(data)
-
         split_index = int(split * len(data))
         train_data = data[:split_index]
         test_data = data[split_index:]

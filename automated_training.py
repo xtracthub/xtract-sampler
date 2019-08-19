@@ -123,7 +123,7 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
     system_reader.run()
     print("There are {} files to be processed".format(len(system_reader.filepaths)))
 
-    with open(outfile, 'a', newline='') as f:
+    with open(outfile, 'w', newline='') as f:
         csv_writer = csv.writer(f)
         if os.path.getsize(outfile) == 0:
             csv_writer.writerow(["path", "size", "file_label", "infer_time"])

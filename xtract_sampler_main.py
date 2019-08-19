@@ -126,7 +126,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
             return
 
         if model_name is None:
-            model_name = "{}-{}-trial{}.pkl".format(classifier, features, current_time)
+            model_name = "{}-{}-{}.pkl".format(classifier, features, current_time)
 
         if os.path.exists(features_outfile):
             try:
@@ -137,7 +137,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                 return
         else:
             reader = NaiveTruthReader(features, labelfile=label_csv)
-        print(type(reader))
+
         experiment(reader, classifier, feature, n,
                    split, model_name, features_outfile)
 
@@ -164,7 +164,6 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                     reader_object = pkl.load(f)
                 with open(features_outfile, 'wb') as f:
                     reader_object.data.extend(reader.data)
-                    print(reader_object.data)
                     pkl.dump(reader_object, f)
             else:
                 with open(features_outfile, 'ab') as f:
@@ -174,6 +173,9 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                 pkl.dump(reader, f)
 
         print("Done saving features")
+
+    else:
+        print("Invalid mode")
 
 
 if __name__ == '__main__':
