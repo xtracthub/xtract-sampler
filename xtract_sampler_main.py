@@ -91,11 +91,16 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
             return
-        with open(results_file, 'w') as prediction_file:
-            json.dump(predict_single_file(dirname, trained_classifier, feature, head_bytes=head_bytes,
-                                          rand_bytes=rand_bytes), prediction_file)
-        print(predict_single_file(predict_file, trained_classifier,
-                                  feature))
+        # with open(results_file, 'w') as prediction_file:
+        #     json.dump(predict_single_file(dirname, trained_classifier, feature, head_bytes=head_bytes,
+        #                                   rand_bytes=rand_bytes), prediction_file)
+        t0 = time.time()
+        prediction = predict_single_file(predict_file, trained_classifier,
+                                         feature)
+        meta = {"sampler": {predict_file: prediction}, "extract time": time.time() - t0}
+        print(meta)
+        return meta
+
     elif mode == 'predict' and dirname is not None:
         try:
             with open(trained_classifier, 'rb') as classifier_file:
@@ -106,9 +111,16 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
             return
-        with open(results_file, 'w') as prediction_file:
-            json.dump(predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
-                                        rand_bytes=rand_bytes), prediction_file)
+        # with open(results_file, 'w') as prediction_file:
+        #     json.dump(predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
+        #                                 rand_bytes=rand_bytes), prediction_file)
+        t0 = time.time()
+        predictions = predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
+                                        rand_bytes=rand_bytes)
+        meta = {"sampler": predictions, "extract time": time.time() - t0}
+        print(meta)
+        return meta
+
     elif mode == 'train':
         if classifier not in ["svc", "logit", "rf"]:
             print("Invalid classifier option %s" % classifier)
@@ -218,7 +230,8 @@ if __name__ == '__main__':
                         default=None)
     args = parser.parse_args()
 
-    extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
-                    args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
-                    args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
+    meta = extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
+                           args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
+                           args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
+    print(meta)
 
