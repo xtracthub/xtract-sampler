@@ -12,7 +12,7 @@ sys.path.insert(0, 'xtract-tabular')
 from xtract_tabular_main import extract_columnar_metadata
 from xtract_jsonxml_main import extract_json_metadata
 from xtract_keyword_main import extract_keyword
-from xtract_netcdf_main import extract_netcdf_metadata
+from xtract_netcdf_main import extract_netcdf
 
 os.chdir('xtract-sampler')
 img_extensions = ["jpg", "png", "gif", "bmp", "jpeg", "tif", "tiff", "jif",
@@ -73,7 +73,7 @@ def infer_type(filepath):
         if get_extension(filepath) in img_extensions:
             return "image"
         try:
-            extract_netcdf_metadata(filepath)
+            extract_netcdf(filepath)
             return "netcdf"
         except Exception as e:
             if e.__class__ == TimeoutError:
