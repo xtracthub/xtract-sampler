@@ -12,7 +12,7 @@ sys.path.insert(0, 'xtract-tabular')
 from xtract_tabular_main import extract_columnar_metadata
 from xtract_jsonxml_main import extract_json_metadata
 from xtract_keyword_main import extract_keyword
-from xtract_netcdf_main import extract_netcdf_metadata
+from xtract_netcdf_main import extract_netcdf
 
 os.chdir('xtract-sampler')
 img_extensions = ["jpg", "png", "gif", "bmp", "jpeg", "tif", "tiff", "jif",
@@ -68,17 +68,17 @@ def get_extension(filepath):
 
 # TODO: Add a 'verbose' mode that actually prints the exceptions.
 def infer_type(filepath):
-    print(filepath)
+    #print(filepath)
     with timeout(seconds=15):
         if get_extension(filepath) in img_extensions:
             return "image"
         try:
-            extract_netcdf_metadata(filepath)
+            extract_netcdf(filepath)
             return "netcdf"
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            print("{} netcdf: {}".format(filepath, e))
+            #print("{} netcdf: {}".format(filepath, e))
             pass
         try:
             extract_json_metadata(filepath)
@@ -86,7 +86,7 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            print("{} jsonxml: {}".format(filepath, e))
+            #print("{} jsonxml: {}".format(filepath, e))
             pass
         try:
             extract_columnar_metadata(filepath, parallel=False)
@@ -94,7 +94,7 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            print("{} tabular: {}".format(filepath, e))
+            #print("{} tabular: {}".format(filepath, e))
             pass
         try:
             if extract_keyword(filepath)["keywords"]:
@@ -104,7 +104,7 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            print("{} freetext: {}".format(filepath, e))
+            #print("{} freetext: {}".format(filepath, e))
             pass
         return "unknown"
 
@@ -113,15 +113,25 @@ def create_row(filepath):
     t0 = time.time()
     row = [filepath, os.path.getsize(filepath), infer_type(filepath)]
     row.append(time.time() - t0)
-    print(row)
+    #print(row)
     return row
 
 
-def write_naive_truth(outfile, top_dir, multiprocess=False):
+def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=100):
+    """Grabs labels for a directory of files and writes them to a csv.
+
+    outfile (str): Name of file to write labls to.
+    top_dir (str): Path to directory of files to get labels from.
+    multiprocess (bool): Whether to use multiprocessing or not.
+    chunksize (int): Size of chunks to pass onto each core if multiprocessing is true.
+    n (int): Number of files to process before printing a progress message.
+    :return:
+    """
     t0 = time.time()
     system_reader = SystemReader(top_dir)
     system_reader.run()
-    print("There are {} files to be processed".format(len(system_reader.filepaths)))
+    num_files = len(system_reader.filepaths)
+    print("There are {} files to be processed".format(num_files))
 
     with open(outfile, 'w', newline='') as f:
         csv_writer = csv.writer(f)
@@ -132,10 +142,16 @@ def write_naive_truth(outfile, top_dir, multiprocess=False):
         # TODO: Cut up the search space beforehand.
         if multiprocess:
             pools = mp.Pool()
-            list_of_rows = pools.map(create_row, system_reader.filepaths)
+            list_of_rows = []
+            for row in pools.imap_unordered(create_row, system_reader.filepaths, chunksize=chunksize):
+                if (len(list_of_rows) % n) == 0:
+                    print("Processed {}/{} rows. Elapsed time: {} seconds".format(len(list_of_rows), num_files,
+                                                                                  time.time() - t0))
+                list_of_rows.append(row)
+
             pools.close()
             pools.join()
-
+            print("Done processing files")
             for row in list_of_rows:
                 csv_writer.writerow(row)
         else:
