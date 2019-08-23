@@ -3,7 +3,7 @@ import random
 import math
 
 
-path = '/Users/ryan/Documents/CS/CDAC/official_xtract/old_result.json'
+path = '/home/tskluzac/xtract-crawler/globus/result.json'
 
 def load_json(json_path):
     with open(json_path, 'r') as f:
@@ -21,11 +21,12 @@ def random_selection(json_file):
     crawled_json_keys = list(crawled_json.keys())
     crawled_json_values = list(crawled_json.values())
     print("Done getting values")
-    new_json_size = math.floor(len(crawled_json) * 0.1)
+    new_json_size = math.floor(len(crawled_json) * 0.05)
     new_json_indices = random.sample(range(len(crawled_json)), new_json_size)
 
     new_json = {}
     for indice in new_json_indices:
+        # indice = indice.replace('//', '/')
         total_size += crawled_json_values[indice]['physical']['size']
 
         if crawled_json_values[indice]['physical']['extension'] in ["zip", "tar", "gz", "tgz", "Z"]:
@@ -37,16 +38,14 @@ def random_selection(json_file):
     print("Total size: {} TB".format(total_size / (10 ** 12)))
     print("Num compressed: {} files".format(num_compressed))
     print("Compressed Size: {} GB".format(compressed_size / (10 ** 9)))
-    #return new_json
-    return total_size / (10 ** 12)
 
-size_vals = []
-json_file = load_json(path)
-for i in range(1000):
-    print(i)
-    size_vals.append(random_selection(json_file))
-
-print("Max: {}".format(max(size_vals)))
-print("Min: {}".format(min(size_vals)))
-print("Average: {}".format(sum(size_vals) / len(size_vals)))
-
+    total_size = total_size/(10 ** 12)
+    print(total_size)
+    if total_size < 0.45:
+        print("YAY!")
+        return new_json
+    
+with open('rand_samp.json','w') as g:
+    rand_sel = random_selection(load_json(path))
+    json.dump(rand_sel, g)
+    print("Successfully written to file!")
