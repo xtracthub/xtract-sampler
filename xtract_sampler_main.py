@@ -154,7 +154,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                    split, model_name, features_outfile)
 
     elif mode == 'labels_features':
-        write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
+        write_naive_truth(csv_outfile, dirname, multiprocess=True)
 
         if feature == "head":
             features = HeadBytes(head_size=head_bytes)
