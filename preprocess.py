@@ -5,6 +5,7 @@ import os
 
 def crawl_dir(json_or_server="json", directory=None):
     r = {}
+    i = 0
     sub_dirs = [x[0] for x in os.walk(directory)]
     try:
         os.makedirs(extracted_files_dir)
@@ -19,15 +20,15 @@ def crawl_dir(json_or_server="json", directory=None):
                 
                 if json_or_server == "json":
                     print(file_path)
+                    i += 1
+                    print(i)
                     queues.put_on_queue({"file_path": str(file_path)})
 
 
     return r
 
 
-
-
 if __name__ == "__main__":
 
     print("Starting preprocessing")
-    crawl_dir(directory="/Users/tylerskluzacek/Downloads/")
+    crawl_dir(directory="/projects/DLHub/tyler/sampler_train_set")
