@@ -25,7 +25,7 @@ Two-phase automated training allows users to generate labels and save features f
     - `ex4` should be either head, rand, randhead to set the features as bytes from the head of the file, random bytes, or a mixture of both.
     - Additional `--head_bytes` and `--rand_bytes` parameters can be passed to specify the number of bytes to take from the file (the default is 512 bytes if these parameters aren't passed).
 2. Repeat step 1 with as many directories as you want. However, `--features_outfile` and `--features` must always be the same. Additionally if `--head_bytes` or `--rand_bytes` is passed, they must stay the same too.
-3. `python xtract_sampler_main.py --mode train --classifier ex1 --features ex2 --features_outfile ex3
+3. `python xtract_sampler_main.py --mode train --classifier ex1 --features ex2 --features_outfile ex3`
     - `ex1` should be either rf, svc, or logit for a random forest, support vector classification, or logistic regression model.
     - `ex2` should be either head, rand, randhead for the features to be bytes from the head of the file, random bytes, or a mixture of both.
     - `ex3` is the name/path of the .pkl file passed to `--features_outfile` in steps 1 and 2.
