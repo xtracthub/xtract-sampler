@@ -1,1 +1,1 @@
-{"tabular": 1, "json/xml": 2, "freetext": 3, "unknown": 4, "image": 5}
+{"tabular": 1, "image": 2, "freetext": 3, "unknown": 4, "json/xml": 5, "netcdf": 6}

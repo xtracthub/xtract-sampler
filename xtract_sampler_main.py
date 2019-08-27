@@ -138,7 +138,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
             return
 
         if model_name is None:
-            model_name = "{}-{}-{}.pkl".format(classifier, features, current_time)
+            model_name = "{}-{}-{}.pkl".format(classifier, feature, current_time)
 
         if os.path.exists(features_outfile):
             try:
@@ -154,7 +154,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                    split, model_name, features_outfile)
 
     elif mode == 'labels_features':
-        write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
+        # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
 
         if feature == "head":
             features = HeadBytes(head_size=head_bytes)
@@ -166,9 +166,11 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         else:
             print("Invalid feature option %s" % feature)
             return
-
-        reader = NaiveTruthReader(features, labelfile=csv_outfile)
+        print("Running naive truth reader")
+        reader = NaiveTruthReader(features,  labelfile=csv_outfile)
         reader.run()
+        
+        print("Saving features to: {}".format(features_outfile))
 
         try:
             if os.path.getsize(features_outfile) > 0:
@@ -181,6 +183,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                 with open(features_outfile, 'ab') as f:
                     pkl.dump(reader, f)
         except:
+            print("There was an exception!")
             with open(features_outfile, 'ab') as f:
                 pkl.dump(reader, f)
 
