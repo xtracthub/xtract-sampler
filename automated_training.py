@@ -67,8 +67,16 @@ def get_extension(filepath):
 
 
 # TODO: Add a 'verbose' mode that actually prints the exceptions.
+# TODO: Fix this monstrosity of if e.__class__ == TimeoutError
 def infer_type(filepath):
-    #print(filepath)
+    """Generates a label by brute force testing all extractors on a file.
+
+    Parameter:
+    filepath (str): Path of file to generate label for.
+
+    Return:
+    (str): Label for filepath.
+    """
     with timeout(seconds=15):
         if get_extension(filepath) in img_extensions:
             return "image"
@@ -78,7 +86,6 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            # print("{} netcdf: {}".format(filepath, e))
             pass
         try:
             extract_json_metadata(filepath)
@@ -86,7 +93,6 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            # print("{} jsonxml: {}".format(filepath, e))
             pass
         try:
             extract_columnar_metadata(filepath, parallel=False)
@@ -94,7 +100,6 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            # print("{} tabular: {}".format(filepath, e))
             pass
         try:
             if extract_keyword(filepath)["keywords"]:
@@ -104,20 +109,36 @@ def infer_type(filepath):
         except Exception as e:
             if e.__class__ == TimeoutError:
                 return "unknown"
-            # print("{} freetext: {}".format(filepath, e))
             pass
         return "unknown"
 
 
 def create_row(filepath):
+    """Creates a list consisting of a filepath, file size, file label, and label generation time.
+
+    Parameter:
+    filepath (str): Filepath of file to create list for.
+
+    Return:
+    row (list): List of filepath, file size, file label, and label generation time.
+    """
     t0 = time.time()
     row = [filepath, os.path.getsize(filepath), infer_type(filepath)]
     row.append(time.time() - t0)
-    # print(row)
+
     return row
 
 
 def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=1000):
+    """Generates labels for a directory of files.
+
+    Parameters:
+    outfile (str): Name of .csv to write labels into.
+    top_dir (str): Path to directory to generate labels for.
+    multiprocess (bool): Whether to generate labels in parallel (recommended).
+    chunksize (Int): Chunksize of chunks to be processed in parallel if multiprocessing is true.
+    n (Int): Number of files to process before printing a status message.
+    """
     t0 = time.time()
     system_reader = SystemReader(top_dir)
     system_reader.run()
@@ -128,7 +149,6 @@ def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=1000)
         csv_writer = csv.writer(f)
         if os.path.getsize(outfile) == 0:
             csv_writer.writerow(["path", "size", "file_label", "infer_time"])
-
 
         # TODO: Cut up the search space beforehand.
         if multiprocess:
@@ -144,6 +164,8 @@ def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=1000)
             pools.close()
             pools.join()
 
+            print("Done generating labels. Now writing labels to {}...".format(outfile))
+
             for row in list_of_rows:
                 csv_writer.writerow(row)
         else:
@@ -151,8 +173,6 @@ def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=1000)
                 csv_writer.writerow(create_row(filepath))
 
     print("Automated training time: {}".format(time.time() - t0))
-
-
 
 
 
