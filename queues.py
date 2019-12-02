@@ -84,32 +84,31 @@ def pull_off_results_queue():
         print("Messages unavailable!")
         return None
 
-import csv
-import os
-searched_files = set()  # TODO: This state isn't saved during checkpointing.
-outfile = 'le-features.csv'
+#import csv
+#import os
+#searched_files = set()  # TODO: This state isn't saved during checkpointing.
+#outfile = 'le-features.csv'
 # message1 = pull_off_results_queue()
 # {"file_path": "/projects/DLHub/tyler/sampler_train_set/48148-845.xyz", "file_size": 686, "sample_type": "tabular", "total_time": 0.19516873359680176}
-with open(outfile, 'a', newline='') as f:
-    csv_writer = csv.writer(f)
+#with open(outfile, 'a', newline='') as f:
+#    csv_writer = csv.writer(f)
     #if os.path.getsize(outfile) == 0:
     #    csv_writer.writerow(["path", "size", "file_label", "infer_time"])
-    i = 0    
-    while True:
-        message1 = pull_off_results_queue()
-        if message1["file_path"] not in searched_files:
-            csv_writer.writerow([message1["file_path"], message1["file_size"], message1["sample_type"], message1["total_time"]])
-            print("Successfully written file attributes to disk!") 
-            searched_files.add(message1["file_path"])
-        else:
-            print("Duplicate file!")
-
+#    i = 0    
+#    while True:
+#        message1 = pull_off_results_queue()
+#        if message1["file_path"] not in searched_files:
+#            csv_writer.writerow([message1["file_path"], message1["file_size"], message1["sample_type"], message1["total_time"]])
+#            print("Successfully written file attributes to disk!") 
+#            searched_files.add(message1["file_path"])
+#        else:
+#            print("Duplicate file!")
+#
         #if i == 5: 
         #    break
-        i+=1
-        print("Processed: {}".format(i))
-# put_on_results_queue({"hi": "hello"})
-# put_on_queue({"hi": "hello"})
-# pull_off_queue()
+#        i+=1
+#        print("Processed: {}".format(i))
 
 
+
+# put_on_queue({"hey":"filet"})

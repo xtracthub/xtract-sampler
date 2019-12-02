@@ -12,7 +12,8 @@ from test_model import score_model
 from randbytes import RandBytes
 from randhead import RandHead
 from predict import predict_single_file, predict_directory
-from automated_training import write_naive_truth
+# from automated_training import write_naive_truth
+from cloud_automated_training import write_naive_truth
 
 # Current time for documentation purposes
 current_time = datetime.datetime.today().strftime('%Y-%m-%d')
@@ -154,6 +155,8 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                    split, model_name, features_outfile)
 
     elif mode == 'labels_features':
+
+
         # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
 
         if feature == "head":
