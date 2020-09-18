@@ -94,16 +94,3 @@ def write_naive_truth(outfile, top_dir, multiprocess=False, chunksize=1, n=1000)
 
     print("Automated training time: {}".format(time.time() - t0))
 
-
-#if __name__ == "__main__":
-#    print("Beginning cloud automated file training...")
-#    parser = argparse.ArgumentParser()
-#    parser.add_argument('-d', '--directory',  default='.')
-#    parser.add_argument('-o', '--output_file', default='cloud_default.csv')
-#    
-#    args = parser.parse_args()
-#
-#    print("Writing Naive Truth file...") 
-#    write_naive_truth(args.output_file, args.directory, multiprocessing=True)
-# create_row("potato")
-
