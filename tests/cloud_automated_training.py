@@ -5,7 +5,7 @@ import csv
 import multiprocessing as mp
 import time
 from timeout import timeout
-os.chdir('..')
+os.chdir('../..')
 sys.path.insert(0, 'xtract-jsonxml')
 sys.path.insert(0, 'xtract-netcdf')
 sys.path.insert(0, 'xtract-keyword')

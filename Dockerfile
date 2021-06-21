@@ -18,4 +18,3 @@ RUN git clone https://github.com/xtracthub/xtract-tabular && git clone https://g
 RUN pip install -U nltk
 RUN pip install -r requirements.txt
 
-#ENTRYPOINT ["python", "main.py"]

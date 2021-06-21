@@ -13,7 +13,7 @@ from randbytes import RandBytes
 from randhead import RandHead
 from predict import predict_single_file, predict_directory
 # from automated_training import write_naive_truth
-from cloud_automated_training import write_naive_truth
+# from cloud_automated_training import write_naive_truth
 
 # Current time for documentation purposes
 current_time = datetime.datetime.today().strftime('%Y-%m-%d')
@@ -47,6 +47,9 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
         reader.run()
     read_time = time.time() - read_start_time
     classifier = ModelTrainer(reader, classifier=classifier_name, split=split)
+
+    # print(classifier)
+    # exit()
 
     for i in range(trials):
         print("Starting trial {} out of {} for {} {}".format(i, trials,
@@ -88,6 +91,9 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                 trained_classifier = pkl.load(classifier_file)
         except:
             print("Invalid trained classifier")
+
+        print(trained_classifier)
+        exit()
 
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
@@ -155,7 +161,6 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                    split, model_name, features_outfile)
 
     elif mode == 'labels_features':
-
 
         # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
 

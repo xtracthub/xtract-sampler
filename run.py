@@ -4,10 +4,8 @@ import subprocess
 
 os.chdir('/src/')
 
-# TODO: Will eventually be dealer's choice, but right now RF is
-# TODO: ... obviously superior.
-model = "rf" #os.environ["MODEL"]
-features = "randhead" #os.environ["FEATURES"]
+model = "rf"
+features = "randhead"
 
 runnable = """python3 FTI_Models/main.py /src/ {0} {1}""".format(str(model), str(features))
 

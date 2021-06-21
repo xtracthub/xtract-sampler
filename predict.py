@@ -14,6 +14,8 @@ def predict_single_file(filename, trained_classifier, feature, head_bytes=512, r
     trained_classifier: (sklearn model): Trained model.
     feature (str): Type of feature that trained_classifier was trained on.
     """
+    print(f"Filename: {filename}")
+    print(f"Trained classifier: {trained_classifier}")
 
     with open('CLASS_TABLE.json', 'r') as f:
         label_map = json.load(f)
@@ -34,15 +36,28 @@ def predict_single_file(filename, trained_classifier, feature, head_bytes=512, r
     x = np.array([int.from_bytes(c, byteorder="big") for c in data])
     x = [x]
 
+    print(f"x: {x}")
+    print(type(x))
     prediction = trained_classifier.predict(x)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
     return label
 
+# predict_single_file('/Users/tylerskluzacek/Desktop/Veseli_w9.pdf', trained_classifier)
 
 def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, rand_bytes=512):
+    """
+    Iterate over each file in a directory, and run a prediction for each file.
+    :param dir_name:  (str) -- directory to be predicted
+    :param trained_classifier:  (str) -- name of the classifier (from rf, svm, logit)
+    :param feature: (str) -- from head, randhead, rand
+    :param head_bytes: (int) the number of bytes to read from header (default: 512)
+    :param rand_bytes: (int) the number of bytes to read from randomly throughout file
+
+    """
     file_predictions = {}
 
+    # TODO: Where is this created? We need to isolate that in case it changes w/ addition of extractor.
     with open('CLASS_TABLE.json', 'r') as f:
         label_map = json.load(f)
         f.close()
