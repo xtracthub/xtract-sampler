@@ -1,3 +1,6 @@
+
+from sklearn.metrics import precision_score
+
 def score_model(model, X_test, y_test):
     """Scores the model.
 
@@ -11,5 +14,8 @@ def score_model(model, X_test, y_test):
     (float): The percentage of files from X_test that model was able to
     correctly classify.
     """
+    # avg_prec_score = precision_score(X_test, y_test)
+    # print(f"Model precision: {avg_prec_score}")
+
     return model.score(X_test, y_test)
 

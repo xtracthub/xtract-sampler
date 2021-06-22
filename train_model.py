@@ -4,10 +4,11 @@ from random import shuffle
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import average_precision_score
 
 
 class ModelTrainer(object):
-    def __init__(self, reader, classifier="svc", split=0.8):
+    def __init__(self, reader, class_table_path, classifier="svc", split=0.8):
         """Initializes the ModelTrainer class.
         reader (list): List of file paths, features, and labels read from a
         label file.
@@ -41,7 +42,8 @@ class ModelTrainer(object):
                 X[i] = x
                 Y[i] = y
 
-        with open("CLASS_TABLE.json", 'w') as class_table:
+        # model_name = "{}-{}-{}.pkl".format(classifier, feature, timestamp)
+        with open(class_table_path, 'w') as class_table:
             json.dump(reader.feature.class_table, class_table)
 
     def train(self):
@@ -57,6 +59,7 @@ class ModelTrainer(object):
                                                 max_depth=4000,
                                                 min_samples_split=3)
         self.model.fit(self.X_train, self.Y_train)
+
 
     def shuffle(self, split=None):
         """Shuffles the datasets for new trials."""

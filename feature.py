@@ -17,7 +17,7 @@ class FeatureMaker:
     def get_feature(self, open_file):
         return open_file.name
    
-    def translate(data_row):
+    def translate(self, data_row):
         """
         translate feature from get_feature to 
         a numpy x and y

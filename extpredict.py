@@ -168,4 +168,3 @@ def get_extension(filename):
     if "." not in filename:
         return "None"
     return filename[filename.rfind("."):]
-

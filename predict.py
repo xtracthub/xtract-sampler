@@ -7,7 +7,7 @@ from randbytes import RandBytes
 from randhead import RandHead
 
 
-def predict_single_file(filename, trained_classifier, feature, head_bytes=512, rand_bytes=512):
+def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
     """Predicts the type of file.
 
     filename (str): Name of file to predict the type of.
@@ -15,9 +15,10 @@ def predict_single_file(filename, trained_classifier, feature, head_bytes=512, r
     feature (str): Type of feature that trained_classifier was trained on.
     """
     print(f"Filename: {filename}")
-    print(f"Trained classifier: {trained_classifier}")
-
-    with open('CLASS_TABLE.json', 'r') as f:
+    # print(f"Trained classifier: {trained_classifier}")
+    # class_table =
+    print(f"Class table path: {class_table_name}")
+    with open(class_table_name, 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":
@@ -43,7 +44,6 @@ def predict_single_file(filename, trained_classifier, feature, head_bytes=512, r
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
     return label
 
-# predict_single_file('/Users/tylerskluzacek/Desktop/Veseli_w9.pdf', trained_classifier)
 
 def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, rand_bytes=512):
     """
@@ -57,8 +57,9 @@ def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, ran
     """
     file_predictions = {}
 
-    # TODO: Where is this created? We need to isolate that in case it changes w/ addition of extractor.
-    with open('CLASS_TABLE.json', 'r') as f:
+    class_table = f"CLASS_TABLE-{trained_classifier.replace('trained_classifiers', 'class_tables')}.json"
+
+    with open(class_table, 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":

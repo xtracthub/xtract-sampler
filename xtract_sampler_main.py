@@ -15,7 +15,7 @@ from predict import predict_single_file, predict_directory
 # from automated_training import write_naive_truth
 # from cloud_automated_training import write_naive_truth
 
-# Current time for documentation purposes
+# Global current time for saving models, class-tables, and training info.
 current_time = datetime.datetime.today().strftime('%Y-%m-%d')
 
 
@@ -46,10 +46,10 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
     if features_outfile is None:
         reader.run()
     read_time = time.time() - read_start_time
-    classifier = ModelTrainer(reader, classifier=classifier_name, split=split)
 
-    # print(classifier)
-    # exit()
+    model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
+    class_table_path = f"models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
+    classifier = ModelTrainer(reader, class_table_path=class_table_path, classifier=classifier_name, split=split)
 
     for i in range(trials):
         print("Starting trial {} out of {} for {} {}".format(i, trials,
@@ -81,19 +81,28 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
             classifier.shuffle()
 
 
-def extract_sampler(mode='train', classifier='rf', feature='head', model_name=None, n=1, head_bytes=512, rand_bytes=512,
+# TODO: Remove most of these auto-filled values.
+def extract_sampler(mode='train', classifier='rf', feature='head', model_name=None, n=1, head_bytes=0, rand_bytes=0,
                     split=0.8, label_csv=None, dirname=None, predict_file=None,
-                    trained_classifier='rf-head-default.pkl', results_file='sampler_results.json',
+                    trained_classifier=None, results_file="sampler_results.thing",
                     csv_outfile='naivetruth.csv', features_outfile=None):
+
+    # model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
+    if mode == 'predict' and trained_classifier is not None:
+        class_table_name = f"models/class_tables/CLASS_TABLE-{(trained_classifier.split('/')[-1]).split('.')[0]}.json"
+        print(f"Class Table name: {class_table_name}")
+    # exit()
+
     if mode == 'predict' and predict_file is not None:
         try:
             with open(trained_classifier, 'rb') as classifier_file:
                 trained_classifier = pkl.load(classifier_file)
-        except:
-            print("Invalid trained classifier")
+        except Exception as e:
+            raise ValueError(f"Invalid trained classifier: {e}")
 
-        print(trained_classifier)
-        exit()
+        # print("AYE")
+        # print(trained_classifier)
+        # exit()
 
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
@@ -102,8 +111,8 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         #     json.dump(predict_single_file(dirname, trained_classifier, feature, head_bytes=head_bytes,
         #                                   rand_bytes=rand_bytes), prediction_file)
         t0 = time.time()
-        prediction = predict_single_file(predict_file, trained_classifier,
-                                         feature)
+        prediction = predict_single_file(predict_file, trained_classifier, class_table_name=class_table_name,
+                                         feature=feature)
         meta = {"sampler": {predict_file: prediction}, "extract time": time.time() - t0}
         print(meta)
         return meta
@@ -145,58 +154,59 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
             return
 
         if model_name is None:
-            model_name = "{}-{}-{}.pkl".format(classifier, feature, current_time)
+            model_name = f"models/trained_classifiers/{classifier}-{feature}-{current_time}.pkl"
 
-        if os.path.exists(features_outfile):
-            try:
-                with open(features_outfile, 'rb') as f:
-                    reader = pkl.load(f)
-            except:
-                print("Invalid features outfile")
-                return
-        else:
-            reader = NaiveTruthReader(features, labelfile=label_csv)
+        # TODO: investigate and bring this back.
+        # if os.path.exists(features_outfile):
+        #     try:
+        #         with open(features_outfile, 'rb') as f:
+        #             reader = pkl.load(f)
+        #     except:
+        #         print("Invalid features outfile")
+        #         return
+        # else:
+        reader = NaiveTruthReader(features, labelfile=label_csv)
 
         experiment(reader, classifier, feature, n,
                    split, model_name, features_outfile)
 
-    elif mode == 'labels_features':
-
-        # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
-
-        if feature == "head":
-            features = HeadBytes(head_size=head_bytes)
-        elif feature == "rand":
-            features = RandBytes(number_bytes=rand_bytes)
-        elif feature == "randhead":
-            features = RandHead(head_size=head_bytes,
-                                rand_size=rand_bytes)
-        else:
-            print("Invalid feature option %s" % feature)
-            return
-        print("Running naive truth reader")
-        reader = NaiveTruthReader(features,  labelfile=csv_outfile)
-        reader.run()
-        
-        print("Saving features to: {}".format(features_outfile))
-
-        try:
-            if os.path.getsize(features_outfile) > 0:
-                with open(features_outfile, 'rb') as f:
-                    reader_object = pkl.load(f)
-                with open(features_outfile, 'wb') as f:
-                    reader_object.data.extend(reader.data)
-                    pkl.dump(reader_object, f)
-            else:
-                with open(features_outfile, 'ab') as f:
-                    pkl.dump(reader, f)
-        except:
-            print("There was an exception!")
-            with open(features_outfile, 'ab') as f:
-                pkl.dump(reader, f)
-
-        print("Done saving features")
-
+    # elif mode == 'labels_features':
+    #
+    #     # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
+    #
+    #     if feature == "head":
+    #         features = HeadBytes(head_size=head_bytes)
+    #     elif feature == "rand":
+    #         features = RandBytes(number_bytes=rand_bytes)
+    #     elif feature == "randhead":
+    #         features = RandHead(head_size=head_bytes,
+    #                             rand_size=rand_bytes)
+    #     else:
+    #         print("Invalid feature option %s" % feature)
+    #         return
+    #     print("Running naive truth reader")
+    #     reader = NaiveTruthReader(features,  labelfile=csv_outfile)
+    #     reader.run()
+    #
+    #     print("Saving features to: {}".format(features_outfile))
+    #
+    #     try:
+    #         if os.path.getsize(features_outfile) > 0:
+    #             with open(features_outfile, 'rb') as f:
+    #                 reader_object = pkl.load(f)
+    #             with open(features_outfile, 'wb') as f:
+    #                 reader_object.data.extend(reader.data)
+    #                 pkl.dump(reader_object, f)
+    #         else:
+    #             with open(features_outfile, 'ab') as f:
+    #                 pkl.dump(reader, f)
+    #     except:
+    #         print("There was an exception!")
+    #         with open(features_outfile, 'ab') as f:
+    #             pkl.dump(reader, f)
+    #
+    #     print("Done saving features")
+    #
     else:
         print("Invalid mode")
 
@@ -241,8 +251,7 @@ if __name__ == '__main__':
                         default=None)
     args = parser.parse_args()
 
-    meta = extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
-                           args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
-                           args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
-    print(meta)
+    mdata = extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
+                            args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
+                            args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
 
