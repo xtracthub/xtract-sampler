@@ -22,10 +22,20 @@ class ModelTrainer(object):
         self.split = split
 
         data = [line for line in reader.data]
+
+        print(data[0])
+        # exit()
+
+        # Puts the data in a different order.
         shuffle(data)
+        # print(data[0])
+
+        # Split the data into train and test sets (where split% of the data are for train)
         split_index = int(split * len(data))
-        train_data = data[:split_index]
-        test_data = data[split_index:]
+        train_data = data[:split_index]  # split% of data.
+        test_data = data[split_index:]  # 100% - split% of data.
+
+        # np.zeros: create empty 2D X numpy array (and 1D Y numpy array) for features.
         self.X_train = np.zeros((len(train_data), reader.feature.nfeatures + 0))
         self.Y_train = np.zeros(len(train_data))
 
@@ -35,6 +45,8 @@ class ModelTrainer(object):
         groups = [[train_data, self.X_train, self.Y_train],
                   [test_data, self.X_test, self.Y_test]]
 
+        # Here we merge the features into the empty X_train, ..., Y_test objects created above
+        # --> Do this for both the train and the test data.
         for group in groups:
             raw_data, X, Y = group
             for i in range(len(raw_data)):
@@ -49,7 +61,6 @@ class ModelTrainer(object):
     def train(self):
         """Trains the model."""
         # TODO: as we fiddle with these, should add options to adjust classifier parameters
-
         if self.classifier_type == "svc":
             self.model = SVC(gamma='auto')
         elif self.classifier_type == "logit":

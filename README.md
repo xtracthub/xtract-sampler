@@ -1,6 +1,8 @@
 # xtract-sampler
 ML code to sample a file based on cheap, easily-attainable features of a file. 
 
+To see documentation about the code itself (re: features, readers, etc., please see the README file in classifiers/README.md)
+
 ## Training a model using a .csv:
 `python xtract_sampler_main.py --mode train --classifier ex1 --feature ex2 --label_csv ex3`
 - `ex1` should be either rf, svc, or logit for a random forest, support vector classification, or logistic regression model.
@@ -16,7 +18,7 @@ ML code to sample a file based on cheap, easily-attainable features of a file.
 - `ex3` is the path to the file to predict on.
     - Alternatively, to predict on a directory, use `--dirname ex3` instead of `--predict_file ex3`.
 
-## Running two-phase automated training:
+## Running two-phase automated training (NEEDS TO BE TESTED):
 Two-phase automated training allows users to generate labels and save features for multiple directories before training on those features and labels.
 1. `python xtract_sampler_main.py --mode labels_features --dirname ex1 --features_outfile ex2 --csv_outfile ex3 --features ex4`
     - `ex1` is the directory to generate labels from and to grab features from.
@@ -32,5 +34,5 @@ Two-phase automated training allows users to generate labels and save features f
         - **Note**: If a `--head_bytes` or `--rand_bytes` value was passed during steps 1 and 2, the same value should be passed here.
 
 ## Where are files saved?
-- Models created using the training mode will be saved under the name `classifier-feature-date.pkl` where the classifier and feature are the values passed to the command line and date is the current date. Training a model will also create a .json file named `classifier-feature-date.json` that will contain training times and accuracy results about the trained model. To change the model name, pass `--model_name ex1` where ex1 is the name of the file to save the model.
-- Predictions from the prediction mode will be saved under the name `sampler_results.json`. To change this, pass `--results_file ex1` where ex1 is the name of the file to save prediction results. 
+- Models created using the training mode will be saved under the name `stored_models/trained_classifiers/<classifier>-<feature>-<date>.pkl` where the classifier and feature are the values passed to the command line and date is the current date. Training a model will also create a .json file named `stored_models/trained_classifiers/<classifier>-<feature>-<date>.json` that will contain training times and accuracy results about the trained model. **CURRENTLY UNSUPPORTED**: To change the model name, pass `--model_name ex1` where ex1 is the name of the file to save the model.
+- **Currently Unsupported**: Predictions from the prediction mode will be saved under the name `sampler_results.json`. To change this, pass `--results_file ex1` where ex1 is the name of the file to save prediction results. 

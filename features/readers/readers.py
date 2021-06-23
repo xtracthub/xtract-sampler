@@ -3,6 +3,14 @@ import csv
 import multiprocessing as mp
 
 
+"""
+This file contains a number of classes that read one file, multiple files, or a LIST of files (available locally), 
+and has functions to create (and access) the following: 
+
+--> a list of file directories, filepaths, features, and file labels
+"""
+
+
 class FileReader(object):
     """Takes a single file and turns it into features."""
 
@@ -96,7 +104,7 @@ class SystemReader(object):
 
         for name in os.listdir(dirname):
             if name[0] == ".":
-                continue # exclude hidden files and dirs for time being
+                continue  # exclude hidden files and dirs for time being
             if os.path.isfile(os.path.join(dirname, name)):
                 files.append(name)
             elif os.path.isdir(os.path.join(dirname, name)):
