@@ -1,6 +1,6 @@
 scipy
-numpy
-sklearn
+numpy==1.21.0
+scikit-learn==0.21.3
 xmltodict
 statistics
 argparse

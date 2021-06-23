@@ -5,13 +5,13 @@ import pickle as pkl
 import json
 import os
 
-from headbytes import HeadBytes
-from extpredict import NaiveTruthReader
-from train_model import ModelTrainer
-from test_model import score_model
-from randbytes import RandBytes
-from randhead import RandHead
-from predict import predict_single_file, predict_directory
+from features.headbytes import HeadBytes
+from features.readers.readers import NaiveTruthReader
+from classifiers.train_model import ModelTrainer
+from classifiers.test_model import score_model
+from features.randbytes import RandBytes
+from features.randhead import RandHead
+from classifiers.predict import predict_single_file, predict_directory
 # from automated_training import write_naive_truth
 # from cloud_automated_training import write_naive_truth
 
@@ -47,8 +47,8 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
         reader.run()
     read_time = time.time() - read_start_time
 
-    model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
-    class_table_path = f"models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
+    model_name = f"stored_models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
+    class_table_path = f"stored_models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
     classifier = ModelTrainer(reader, class_table_path=class_table_path, classifier=classifier_name, split=split)
 
     for i in range(trials):
@@ -89,7 +89,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
 
     # model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
     if mode == 'predict' and trained_classifier is not None:
-        class_table_name = f"models/class_tables/CLASS_TABLE-{(trained_classifier.split('/')[-1]).split('.')[0]}.json"
+        class_table_name = f"stored_models/class_tables/CLASS_TABLE-{(trained_classifier.split('/')[-1]).split('.')[0]}.json"
         print(f"Class Table name: {class_table_name}")
     # exit()
 
@@ -154,7 +154,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
             return
 
         if model_name is None:
-            model_name = f"models/trained_classifiers/{classifier}-{feature}-{current_time}.pkl"
+            model_name = f"stored_models/trained_classifiers/{classifier}-{feature}-{current_time}.pkl"
 
         # TODO: investigate and bring this back.
         # if os.path.exists(features_outfile):
