@@ -23,7 +23,7 @@ class ModelTrainer(object):
 
         data = [line for line in reader.data]
 
-        print(data[0])
+        #print(data[0])
         # exit()
 
         # Puts the data in a different order.
