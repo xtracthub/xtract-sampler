@@ -131,7 +131,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         #     json.dump(predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
         #                                 rand_bytes=rand_bytes), prediction_file)
         t0 = time.time()
-        predictions = predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
+        predictions = predict_directory(dirname, trained_classifier,class_table_name=class_table_name,feature=feature, head_bytes=head_bytes,
                                         rand_bytes=rand_bytes)
         meta = {"sampler": predictions, "extract time": time.time() - t0}
         print(meta)

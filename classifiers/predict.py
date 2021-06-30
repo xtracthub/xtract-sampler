@@ -37,15 +37,15 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     x = np.array([int.from_bytes(c, byteorder="big") for c in data])
     x = [x]
 
-    print(f"x: {x}")
-    print(type(x))
+    #print(f"x: {x}")
+    #print(type(x))
     prediction = trained_classifier.predict(x)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
     return label
 
 
-def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, rand_bytes=512):
+def predict_directory(dir_name, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
     """
     Iterate over each file in a directory, and run a prediction for each file.
     :param dir_name:  (str) -- directory to be predicted
@@ -57,9 +57,8 @@ def predict_directory(dir_name, trained_classifier, feature, head_bytes=512, ran
     """
     file_predictions = {}
 
-    class_table = f"CLASS_TABLE-{trained_classifier.replace('trained_classifiers', 'class_tables')}.json"
-
-    with open(class_table, 'r') as f:
+    print(f"Class table path: {class_table_name}")
+    with open(class_table_name, 'r') as f:
         label_map = json.load(f)
         f.close()
     if feature == "head":
