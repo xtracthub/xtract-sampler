@@ -66,7 +66,7 @@ class ModelTrainer(object):
         elif self.classifier_type == "logit":
             self.model = LogisticRegression(multi_class='auto', solver='lbfgs')
         elif self.classifier_type == "rf":
-            self.model = RandomForestClassifier(n_estimators=15,
+            self.model = RandomForestClassifier(n_estimators=30,
                                                 max_depth=4000,
                                                 min_samples_split=3)
         self.model.fit(self.X_train, self.Y_train)

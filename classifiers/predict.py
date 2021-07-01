@@ -47,6 +47,7 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     #print("Prediction probabilities: ", prediction_probabilities)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
+    print(len(trained_classifier.estimators_))
     return label
 
 
