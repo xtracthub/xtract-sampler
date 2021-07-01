@@ -18,3 +18,8 @@ stored_models/trained_classifiers/rf-head-2021-07-01.pkl
 stored_models/trained_classifiers/rf-head-2021-07-01-info.json
 stored_models/class_tables/CLASS_TABLE-svc-head-2021-07-01.json
 stored_models/class_tables/CLASS_TABLE-rf-head-2021-07-01.json
+stored_models/class_tables/CLASS_TABLE-logit-head-2021-07-01.json
+stored_models/class_tables/CLASS_TABLE-svc-head-2021-07-01_v1.json
+stored_models/trained_classifiers/svc-head-2021-07-01-info.json
+stored_models/trained_classifiers/svc-head-2021-07-01.pkl
+stored_models/class_tables/CLASS_TABLE-svc-head-2021-07-01_v2.json
