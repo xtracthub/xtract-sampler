@@ -12,3 +12,5 @@ features/readers/__pycache__/readers.cpython-38.pyc
 stored_models/trained_classifiers/rf-head-2021-06-30.pkl
 stored_models/trained_classifiers/rf-head-2021-06-30-info.json
 stored_models/class_tables/CLASS_TABLE-rf-head-2021-06-30.json
+classifiers/predict.py
+directory_predictions.json

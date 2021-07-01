@@ -2,22 +2,25 @@ import numpy as np
 import json
 import os
 from features.headbytes import HeadBytes
-from features.readers.readers import FileReader, SystemReader
+from features.readers.readers import FileReader 
 from features.randbytes import RandBytes
 from features.randhead import RandHead
 
 
-def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
+def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512, should_print=True):
     """Predicts the type of file.
 
     filename (str): Name of file to predict the type of.
     trained_classifier: (sklearn model): Trained model.
     feature (str): Type of feature that trained_classifier was trained on.
     """
-    print(f"Filename: {filename}")
+    
     # print(f"Trained classifier: {trained_classifier}")
     # class_table =
-    print(f"Class table path: {class_table_name}")
+
+    if should_print:
+        print(f"Filename: {filename}")
+        print(f"Class table path: {class_table_name}")
     with open(class_table_name, 'r') as f:
         label_map = json.load(f)
         f.close()
@@ -40,6 +43,8 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     #print(f"x: {x}")
     #print(type(x))
     prediction = trained_classifier.predict(x)
+    #prediction_probabilities = trained_classifier.predict_proba(x)
+    #print("Prediction probabilities: ", prediction_probabilities)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
     return label
@@ -55,32 +60,12 @@ def predict_directory(dir_name, trained_classifier, class_table_name, feature, h
     :param rand_bytes: (int) the number of bytes to read from randomly throughout file
 
     """
-    file_predictions = {}
+    file_predictions = dict()
 
-    print(f"Class table path: {class_table_name}")
-    with open(class_table_name, 'r') as f:
-        label_map = json.load(f)
-        f.close()
-    if feature == "head":
-        features = HeadBytes(head_size=head_bytes)
-    elif feature == "randhead":
-        features = RandHead(head_size=head_bytes,
-                            rand_size=rand_bytes)
-    elif feature == "rand":
-        features = RandBytes(number_bytes=rand_bytes)
-    else:
-        raise Exception("Not a valid feature set. ")
-    reader = SystemReader(feature_maker=features, top_dir=dir_name)
-    reader.run()
-    for file_data in reader.data:
-
-        data = [line for line in file_data][2]
-
-        x = np.array([int.from_bytes(c, byteorder="big") for c in data])
-        x = [x]
-
-        prediction = trained_classifier.predict(x)
-        label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-        file_predictions[os.path.join(file_data[0], file_data[1])] = label
-
+    for subdir, dirs, files in os.walk(dir_name):
+        for file_name in files:
+            file_path = os.path.join(subdir, file_name)
+            file_predictions[file_path] = predict_single_file(file_path, trained_classifier, class_table_name, feature, head_bytes, rand_bytes, should_print=False)
+    
+    json.dump(file_predictions,open('directory_predictions.json', 'w+'), indent=4)
     return file_predictions

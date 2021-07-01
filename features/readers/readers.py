@@ -42,6 +42,7 @@ class FileReader(object):
             with open(filename, "rb") as open_file:
                 extension = get_extension(filename)
                 features = self.feature.get_feature(open_file)
+                #print("basename: ", os.path.basename(filename))
                 return [os.path.basename(filename), filename, features, extension]
 
         except (FileNotFoundError, PermissionError):
@@ -49,77 +50,6 @@ class FileReader(object):
 
     def run(self):
         self.data = self.handle_file(self.filename)
-
-
-class SystemReader(object):
-    """Traverses file system, and produces initial dataset for prediction."""
-
-    def __init__(self, top_dir, feature_maker):
-        """Initializes SystemReader class.
-
-        top_dir (str): The starting directory of files to get
-        features from.
-        feature_maker (class): An instance of the HeadBytes,
-        RandBytes, RandHead class.
-        """
-        if not os.path.isdir(top_dir):
-            raise NotADirectoryError("%s is not a valid directory" % top_dir)
-
-        self.dirname = top_dir
-        self.feature = feature_maker
-        self.data = []
-        self.next_dirs = []
-
-    def handle_file(self, filename, current_dir):
-        """Appends current_dir, filename, features of filename and
-        extension of filename to self.data.
-
-        Parameters:
-        filename (str): Name of file to extract features from.
-        current_dir (str): Name of current directory that filename is
-        in.
-        """
-        # at some point we may want to parallelize fs traversal, to do that
-        # we could make this a standalone function and use pool.map
-
-        try:
-            with open(os.path.join(current_dir, filename), "rb") as open_file:
-                extension = get_extension(filename)
-                features = self.feature.get_feature(open_file)
-                self.data.append([current_dir, filename, features, extension])
-
-        except (FileNotFoundError, PermissionError):
-            pass
-
-    def parse_dir(self, dirname):
-        """Parse a directory with path dirname, add subdirectories to
-        the list to be processed, and extract features from files.
-
-        Parameter:
-        dirname (str): Name of directory to parse.
-        """
-        # at some point we may want to parallelize fs traversal, to do that
-        # we could make this a standalone function and use pool.map
-        files = []
-
-        for name in os.listdir(dirname):
-            if name[0] == ".":
-                continue  # exclude hidden files and dirs for time being
-            if os.path.isfile(os.path.join(dirname, name)):
-                files.append(name)
-            elif os.path.isdir(os.path.join(dirname, name)):
-                self.next_dirs.append(os.path.join(dirname, name))
-
-        for filename in files:
-            self.handle_file(filename, dirname)
-
-    def run(self):
-        """Extract features from all files in top_dir."""
-        self.next_dirs = [self.dirname]
-
-        while self.next_dirs:
-            dirname = self.next_dirs.pop(0)
-            self.parse_dir(dirname)
 
 
 class NaiveTruthReader(object):
