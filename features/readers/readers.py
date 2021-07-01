@@ -92,6 +92,9 @@ class NaiveTruthReader(object):
         pools.join()
         for idx, item in enumerate(self.data):
             self.data[idx] = item
+    
+    def get_feature_maker(self):
+        return self.feature
 
 
 def get_extension(filename):

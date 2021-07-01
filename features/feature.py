@@ -22,4 +22,7 @@ class FeatureMaker:
         translate feature from get_feature to 
         a numpy x and y
         """
-        return np.zeros(self.nfeatures),0.0
+        return np.zeros(self.nfeatures), 0.0
+    
+    def get_number_of_features(self):
+        return self.nfeatures

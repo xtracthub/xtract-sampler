@@ -4,7 +4,7 @@ from random import shuffle
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import average_precision_score, plot_confusion_matrix
+from sklearn.metrics import  plot_confusion_matrix # uncomment the confusion matrix snippet to use
 import matplotlib.pyplot as plt
 
 
@@ -71,8 +71,6 @@ class ModelTrainer(object):
                                                 max_depth=4000,
                                                 min_samples_split=3)
         self.model.fit(self.X_train, self.Y_train)
-
-        print(self.X_test.shape)
 
         # UNCOMMENT TO PRODUCE CONFUSION MATRIX
         '''

@@ -5,6 +5,7 @@ from features.headbytes import HeadBytes
 from features.readers.readers import FileReader 
 from features.randbytes import RandBytes
 from features.randhead import RandHead
+from sklearn.metrics import precision_score, recall_score
 
 
 def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512, should_print=True):

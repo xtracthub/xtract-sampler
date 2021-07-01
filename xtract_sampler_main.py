@@ -16,7 +16,7 @@ from classifiers.predict import predict_single_file, predict_directory
 # from cloud_automated_training import write_naive_truth
 
 # Global current time for saving models, class-tables, and training info.
-current_time = datetime.datetime.today().strftime('%Y-%m-%d')
+current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 
 
 def experiment(reader, classifier_name, features, trials, split, model_name, features_outfile):
@@ -47,8 +47,8 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
         reader.run()
     read_time = time.time() - read_start_time
 
-    model_name = f"stored_models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
-    class_table_path = f"stored_models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
+    model_name = f"stored_models/trained_classifiers/byteSizeData/{classifier_name}-{features}-{current_time}.pkl"
+    class_table_path = f"stored_models/class_tables/byteSizeData/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
     classifier = ModelTrainer(reader, class_table_path=class_table_path, classifier=classifier_name, split=split)
 
     for i in range(trials):
@@ -59,11 +59,11 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
         print("training")
         classifier.train()
         print("done training")
-        accuracy = score_model(classifier.model, classifier.X_test,
+        accuracy, prec, recall = score_model(classifier.model, classifier.X_test,
                                classifier.Y_test)
         classifier_time = time.time() - classifier_start
 
-        outfile_name = "{}-info.json".format(os.path.splitext(model_name)[0])
+        outfile_name = "{path}-info-{size}.json".format(path=os.path.splitext(model_name)[0], size=str(reader.get_feature_maker().get_number_of_features())+'Bytes')
 
         with open(model_name, "wb") as model_file:
             pkl.dump(classifier.model, model_file)
@@ -74,8 +74,10 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
                            "Read time": read_time,
                            "Train and test time": classifier_time,
                            "Model accuracy": accuracy,
+                           "Model precision": prec,
+                           "Model recall": recall,
                            "Model size": os.path.getsize(model_name)}
-            json.dump(output_data, data_file)
+            json.dump(output_data, data_file, indent=4)
 
         if i != trials-1:
             classifier.shuffle()
