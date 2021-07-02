@@ -48,7 +48,7 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
     read_time = time.time() - read_start_time
 
     model_name = f"stored_models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
-    class_table_path = f"stored_models/class_table/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
+    class_table_path = f"stored_models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
     classifier = ModelTrainer(reader, class_table_path=class_table_path, classifier=classifier_name, split=split)
 
     for i in range(trials):
