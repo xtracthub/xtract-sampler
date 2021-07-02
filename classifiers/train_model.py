@@ -37,10 +37,10 @@ class ModelTrainer(object):
         test_data = data[split_index:]  # 100% - split% of data.
 
         # np.zeros: create empty 2D X numpy array (and 1D Y numpy array) for features.
-        self.X_train = np.zeros((len(train_data), reader.feature.nfeatures + 0))
+        self.X_train = np.zeros((len(train_data), int(reader.feature.nfeatures)))
         self.Y_train = np.zeros(len(train_data))
 
-        self.X_test = np.zeros((len(test_data), reader.feature.nfeatures + 0))
+        self.X_test = np.zeros((len(test_data), int(reader.feature.nfeatures)))
         self.Y_test = np.zeros(len(test_data))
 
         groups = [[train_data, self.X_train, self.Y_train],
@@ -70,6 +70,10 @@ class ModelTrainer(object):
             self.model = RandomForestClassifier(n_estimators=30,
                                                 max_depth=4000,
                                                 min_samples_split=3)
+        print(self.X_train.shape)
+        print(self.Y_train.shape)
+        print(self.X_train)
+        print(self.Y_train)
         self.model.fit(self.X_train, self.Y_train)
 
         # UNCOMMENT TO PRODUCE CONFUSION MATRIX
