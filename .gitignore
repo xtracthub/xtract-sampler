@@ -52,3 +52,6 @@ stored_models/trained_classifiers/rf-head-2021-06-22-info.json
 stored_models/trained_classifiers/rf-head-2021-06-22.pkl
 stored_models/trained_classifiers/rf-randhead-2021-06-22-info.json
 stored_models/class_tables/CLASS_TABLE-rf-head-2021-06-22.json
+classifiers/predict.py
+.gitignore
+directory_probability_predictions.json
