@@ -20,6 +20,7 @@ class ModelTrainer(object):
         """
         self.classifier_type = classifier
         self.model = None
+        self.class_table = reader.feature.class_table
         self.split = split
 
         data = [line for line in reader.data]
@@ -70,21 +71,22 @@ class ModelTrainer(object):
             self.model = RandomForestClassifier(n_estimators=30,
                                                 max_depth=4000,
                                                 min_samples_split=3)
-        print(self.X_train.shape)
-        print(self.Y_train.shape)
-        print(self.X_train)
-        print(self.Y_train)
+        #print(self.X_train.shape)
+        #print(self.Y_train.shape)
+        #print(self.X_train)
+        #print(self.Y_train)
+
         self.model.fit(self.X_train, self.Y_train)
 
         # UNCOMMENT TO PRODUCE CONFUSION MATRIX
-        '''
+        
         disp = plot_confusion_matrix(self.model, self.X_test, self.Y_test,
-                                 display_labels=range(1, 7),
+                                 display_labels=list(self.class_table.keys()),
                                  cmap=plt.cm.Blues,
-                                 normalize='true')
-        disp.ax_.set_title('RF Confusion Matrix')
-        plt.savefig('RF Confusion Matrix No Normalize.png', format='png')
-        '''
+                                 normalize=None)
+        disp.ax_.set_title('SVC Confusion Matrix')
+        plt.savefig('SVC Confusion Matrix No Normalize.png', format='png')
+    
 
     def shuffle(self, split=None):
         """Shuffles the datasets for new trials."""
