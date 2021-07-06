@@ -64,7 +64,7 @@ class ModelTrainer(object):
         """Trains the model."""
         # TODO: as we fiddle with these, should add options to adjust classifier parameters
         if self.classifier_type == "svc":
-            self.model = SVC(gamma='auto')
+            self.model = SVC(gamma='auto', probability=True)
         elif self.classifier_type == "logit":
             self.model = LogisticRegression(multi_class='auto', solver='lbfgs')
         elif self.classifier_type == "rf":
@@ -79,14 +79,14 @@ class ModelTrainer(object):
         self.model.fit(self.X_train, self.Y_train)
 
         # UNCOMMENT TO PRODUCE CONFUSION MATRIX
-        
+        ''' 
         disp = plot_confusion_matrix(self.model, self.X_test, self.Y_test,
                                  display_labels=list(self.class_table.keys()),
                                  cmap=plt.cm.Blues,
                                  normalize=None)
         disp.ax_.set_title('SVC Confusion Matrix')
         plt.savefig('SVC Confusion Matrix No Normalize.png', format='png')
-    
+        '''
 
     def shuffle(self, split=None):
         """Shuffles the datasets for new trials."""
