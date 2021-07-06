@@ -21,7 +21,7 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
 
     if should_print:
         print(f"Filename: {filename}")
-        print(f"Class table path: {class_table_name}")
+        #print(f"Class table path: {class_table_name}")
     with open(class_table_name, 'r') as f:
         label_map = json.load(f)
         f.close()
@@ -44,13 +44,10 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     #print(f"x: {x}")
     #print(type(x))
     prediction = trained_classifier.predict(x)
-    #prediction_probabilities = trained_classifier.predict_proba(x)
-    #print("Prediction probabilities: ", prediction_probabilities)
+    prediction_probabilities = probability_dictionary(trained_classifier.predict_proba(x)[0], label_map)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-    print(len(trained_classifier.estimators_))
-    return label
-
+    return label, prediction_probabilities
 
 def predict_directory(dir_name, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
     """
@@ -67,7 +64,18 @@ def predict_directory(dir_name, trained_classifier, class_table_name, feature, h
     for subdir, dirs, files in os.walk(dir_name):
         for file_name in files:
             file_path = os.path.join(subdir, file_name)
-            file_predictions[file_path] = predict_single_file(file_path, trained_classifier, class_table_name, feature, head_bytes, rand_bytes, should_print=False)
+            file_dict = dict()
+            label, probabilities = predict_single_file(file_path, trained_classifier, class_table_name, feature, head_bytes, rand_bytes, should_print=False)
+            file_dict['label'] = label
+            file_dict['probabilities'] = probabilities
+            file_predictions[file_path] = file_dict
+
     
-    json.dump(file_predictions,open('directory_predictions.json', 'w+'), indent=4)
+    json.dump(file_predictions,open('directory_probability_predictions.json', 'w+'), indent=4)
     return file_predictions
+
+def probability_dictionary(probabilities, label_map):
+    probability_dict = dict()
+    for i in range(len(probabilities)):
+        probability_dict[list(label_map.keys())[i]] = probabilities[i]
+    return probability_dict
