@@ -140,7 +140,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         return meta
 
     elif mode == 'train':
-        if classifier not in ["svc", "logit", "rf"]:
+        if classifier not in ["svc", "logit", "rf", 'nl-svc']:
             print("Invalid classifier option %s" % classifier)
             return
 

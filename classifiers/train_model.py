@@ -1,11 +1,10 @@
 import numpy as np
 import json
 from random import shuffle
-from sklearn.svm import SVC
+from sklearn.svm import SVC, NuSVC, LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import  plot_confusion_matrix # uncomment the confusion matrix snippet to use
-import matplotlib.pyplot as plt
+from sklearn.metrics import  plot_confusion_matrix, RocCurveDisplay, PrecisionRecallDisplay # uncomment the corresponding snippets to use
 
 
 class ModelTrainer(object):
@@ -64,13 +63,13 @@ class ModelTrainer(object):
         """Trains the model."""
         # TODO: as we fiddle with these, should add options to adjust classifier parameters
         if self.classifier_type == "svc":
-            self.model = SVC(gamma='auto', probability=True)
+            self.model = SVC(kernel='linear', gamma='auto', max_iter=1000, probability=False)
         elif self.classifier_type == "logit":
-            self.model = LogisticRegression(multi_class='auto', solver='lbfgs')
+            self.model = LogisticRegression(multi_class='auto', penalty='none', solver='saga', C=1, tol=1e-4, max_iter=100, n_jobs=-1)
         elif self.classifier_type == "rf":
-            self.model = RandomForestClassifier(n_estimators=30,
-                                                max_depth=4000,
-                                                min_samples_split=3)
+            self.model = RandomForestClassifier(n_estimators=30, criterion='gini', max_depth=40, min_samples_split=10, n_jobs=-1)
+        elif self.classifier_type == 'nl-svc':
+            self.model =  NuSVC(nu=.01, gamma='auto')
         #print(self.X_train.shape)
         #print(self.Y_train.shape)
         #print(self.X_train)
@@ -78,15 +77,7 @@ class ModelTrainer(object):
 
         self.model.fit(self.X_train, self.Y_train)
 
-        # UNCOMMENT TO PRODUCE CONFUSION MATRIX
-        ''' 
-        disp = plot_confusion_matrix(self.model, self.X_test, self.Y_test,
-                                 display_labels=list(self.class_table.keys()),
-                                 cmap=plt.cm.Blues,
-                                 normalize=None)
-        disp.ax_.set_title('SVC Confusion Matrix')
-        plt.savefig('SVC Confusion Matrix No Normalize.png', format='png')
-        '''
+       
 
     def shuffle(self, split=None):
         """Shuffles the datasets for new trials."""
