@@ -19,7 +19,10 @@ from classifiers.predict import predict_single_file, predict_directory
 current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 
 
-def experiment(reader, classifier_name, features, trials, split, model_name, features_outfile):
+def experiment(reader, classifier_name,
+               features, trials, split, model_name, features_outfile,
+               C, kernel, iter, degree, penalty, solver, n_estimators,
+               criterion, max_depth, min_sample_split):
     """Trains classifier_name on features from files in reader trials number
     of times and saves the model and returns training and testing data.
 
@@ -49,7 +52,10 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
 
     model_name = f"stored_models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
     class_table_path = f"stored_models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
-    classifier = ModelTrainer(reader, class_table_path=class_table_path, classifier=classifier_name, split=split)
+    classifier = ModelTrainer(reader, C, kernel, iter, degree, penalty, solver,
+                              n_estimators, criterion, max_depth, min_sample_split,
+                              class_table_path=class_table_path, classifier=classifier_name,
+                              split=split)
 
     for i in range(trials):
         print("Starting trial {} out of {} for {} {}".format(i, trials,
@@ -87,7 +93,9 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
 def extract_sampler(mode='train', classifier='rf', feature='head', model_name=None, n=1, head_bytes=0, rand_bytes=0,
                     split=0.8, label_csv=None, dirname=None, predict_file=None,
                     trained_classifier=None, results_file="sampler_results.thing",
-                    csv_outfile='naivetruth.csv', features_outfile=None, ):
+                    csv_outfile='naivetruth.csv', features_outfile=None, C=None, kernel=None,
+                    iter=None, degree=None, penalty=None, solver=None, n_estimators=None,
+                    criterion=None, max_depth=None, min_sample_split=None):
 
     # model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
     if mode == 'predict' and trained_classifier is not None:
@@ -102,9 +110,6 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         except Exception as e:
             raise ValueError(f"Invalid trained classifier: {e}")
 
-        # print("AYE")
-        # print(trained_classifier)
-        # exit()
 
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
@@ -167,10 +172,14 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         #         print("Invalid features outfile")
         #         return
         # else:
+
         reader = NaiveTruthReader(features, labelfile=label_csv)
 
         experiment(reader, classifier, feature, n,
-                   split, model_name, features_outfile)
+                   split, model_name, features_outfile, 
+                   C, kernel, iter, degree, penalty, solver,
+                   n_estimators, criterion, max_depth, 
+                   min_sample_split)
 
     # elif mode == 'labels_features':
     #
