@@ -87,7 +87,7 @@ def experiment(reader, classifier_name, features, trials, split, model_name, fea
 def extract_sampler(mode='train', classifier='rf', feature='head', model_name=None, n=1, head_bytes=0, rand_bytes=0,
                     split=0.8, label_csv=None, dirname=None, predict_file=None,
                     trained_classifier=None, results_file="sampler_results.thing",
-                    csv_outfile='naivetruth.csv', features_outfile=None):
+                    csv_outfile='naivetruth.csv', features_outfile=None, ):
 
     # model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
     if mode == 'predict' and trained_classifier is not None:
@@ -251,9 +251,25 @@ if __name__ == '__main__':
     parser.add_argument("--features_outfile", type=str, help="file to write features to if mode is labels_feautres"
                                                              "else it's a pkl with a reader object",
                         default=None)
+
+    parser.add_argument("--C", type=float, help="regularization parameter that is only useful in Logit and SVC", default=1)
+    parser.add_argument("--kernel", type=str, help="Specified SVC Kernel (Ignored for others)", default='rbf')
+    parser.add_argument("--iter", type=int, help="number of max iterations until it stops (relevant for SVC and Logit only)", default=-1)
+    parser.add_argument("--degree", type=int, help="polynomial degree only for SVC when you specify poly kernel", default=3)
+
+    parser.add_argument("--penalty", type=str, help="sklearn Logistic Regression penalty function (ignored for SVC and RF)", default='l2')
+    parser.add_argument("--solver", type=str, help="sklearn Logistic Regression solver (ignored for SVC and RF)", default='lbfgs')
+
+    parser.add_argument("--n_estimators", type=int, help="sklearn Random Forest number of estimators (ignored in SVC and Logit)", default=30)
+    parser.add_argument("--criterion", type=str, help="sklearn Random Forest criterion (ignored in SVC and Logit)", default='gini')
+    parser.add_argument("--max_depth", type=int, help="sklearn Random Forest max_depth (ignored in SVC and Logit)", default=4000)
+    parser.add_argument("--min_sample_split", type=int, help="sklearn Random Forest min_sample_split (ignored in SVC and Logit)", default=30)
+
     args = parser.parse_args()
 
     mdata = extract_sampler(args.mode, args.classifier, args.feature, args.model_name, args.n, args.head_bytes,
                             args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
-                            args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile)
+                            args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile,
+                            args.C, args.kernel, args.iter, args.degree, args.penalty, args.solver, args.n_estimators, 
+                            args.criterion, args.n_estimators, args.criterion, args.max_depth, args.min_sample_split)
 
