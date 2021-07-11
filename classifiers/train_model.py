@@ -23,7 +23,7 @@ class ModelTrainer(object):
         self.model = None
         self.class_table = reader.feature.class_table
         self.split = split
-        self.parsed_params = self.parse_parameters(C, kernel, iter, degree, 
+        self.params = self.parse_parameters(C, kernel, iter, degree, 
                                                 penalty, solver, n_estimators,
                                                 criterion, max_depth, min_sample_split)
         
@@ -65,11 +65,11 @@ class ModelTrainer(object):
         """Trains the model."""
         # TODO: as we fiddle with these, should add options to adjust classifier parameters
         if self.classifier_type == "svc":
-            self.model = SVC(kernel=self.params['kernel'], C=self.params['C'], max_iter=self.params['iter'], degree=self.params['degree'], n_jobs=-1)
+            self.model = SVC(kernel=self.params['kernel'], C=self.params['C'], max_iter=self.params['iter'], degree=self.params['degree'])
         elif self.classifier_type == "logit":
             self.model = LogisticRegression(penalty=self.params['penalty'], solver=self.params['solver'], C=self.params['C'], max_iter=self.params['iter'], n_jobs=-1)
         elif self.classifier_type == "rf":
-            self.model = RandomForestClassifier(n_estimators=self.params['n_estimators'], criterion=self.params['criterion'], max_depth=self.params['max_depth'], min_samples_split=self.params['min_samples_split'], n_jobs=-1)
+            self.model = RandomForestClassifier(n_estimators=self.params['n_estimators'], criterion=self.params['criterion'], max_depth=self.params['max_depth'], min_samples_split=self.params['min_sample_split'], n_jobs=-1)
         elif self.classifier_type == 'nl-svc':
             self.model =  NuSVC(nu=.01, gamma='auto')
      
@@ -98,6 +98,9 @@ class ModelTrainer(object):
 
         self.X_test = X[split_index:]
         self.Y_test = Y[split_index:]
+
+    def get_parameters(self):
+        return self.params
     
     def parse_parameters(self, C, kernel, iter, degree, penalty, solver,
                         n_estimators, criterion, max_depth, min_sample_split):
@@ -105,32 +108,18 @@ class ModelTrainer(object):
         params = dict()
 
         if self.classifier_type == 'svc':
-            if n_estimators != None or criterion != None or max_depth != None or min_sample_split != None:
-                print("You added parameters for Random Forests. They will be ignored.")
-            if penalty != None or solver != None:
-                print("You added parameters for Logistic Regression. They will be ignored.") 
             params['C'] = C
             params['kernel'] = kernel
             params['iter'] = iter
             params['degree'] = degree
 
         elif self.classifier_type == 'logit':
-            if n_estimators != None or criterion != None or max_depth != None or min_sample_split != None:
-                print("You added parameters for Random Forests. They will be ignored.")
-            if kernel != None or degree != None:
-                print("You added parameters for SVC. They will be ignored.")
             params['C'] = C
             params['iter'] = iter
             params['penalty'] = penalty
             params['solver'] = solver
         
         elif self.classifier_type == 'rf':
-            if C != None or iter != None:
-                print("You added parameters only relevant to SVC or Logit. They will be ignored.")
-            if kernel != None or degree 1= None:
-                print("You added parameters for SVC. They will be ignored.")
-            if penalty != None or solver != None:
-                print("You added parameters for Logistic Regression. They will be ignored.")
             params['n_estimators'] = n_estimators
             params['criterion'] = criterion
             params['max_depth'] = max_depth

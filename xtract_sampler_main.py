@@ -50,8 +50,8 @@ def experiment(reader, classifier_name,
         reader.run()
     read_time = time.time() - read_start_time
 
-    model_name = f"stored_models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
-    class_table_path = f"stored_models/class_tables/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
+    model_name = f"stored_models/trained_classifiers/{classifier_name}/{classifier_name}-{features}-{current_time}.pkl"
+    class_table_path = f"stored_models/class_tables/{classifier_name}/CLASS_TABLE-{classifier_name}-{features}-{current_time}.json"
     classifier = ModelTrainer(reader, C, kernel, iter, degree, penalty, solver,
                               n_estimators, criterion, max_depth, min_sample_split,
                               class_table_path=class_table_path, classifier=classifier_name,
@@ -82,7 +82,9 @@ def experiment(reader, classifier_name,
                            "Model accuracy": accuracy,
                            "Model precision": prec,
                            "Model recall": recall,
-                           "Model size": os.path.getsize(model_name)}
+                           "Model size": os.path.getsize(model_name),
+                           "Modifiable Parameters": classifier.get_parameters(),
+                           "Parameters": classifier.model.get_params()}
             json.dump(output_data, data_file, indent=4)
 
         if i != trials-1:
@@ -280,5 +282,5 @@ if __name__ == '__main__':
                             args.rand_bytes, args.split, args.label_csv, args.dirname, args.predict_file,
                             args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile,
                             args.C, args.kernel, args.iter, args.degree, args.penalty, args.solver, args.n_estimators, 
-                            args.criterion, args.n_estimators, args.criterion, args.max_depth, args.min_sample_split)
+                            args.criterion, args.max_depth, args.min_sample_split)
 
