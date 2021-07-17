@@ -8,16 +8,12 @@ from features.randhead import RandHead
 from sklearn.metrics import precision_score, recall_score
 
 
-def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512, should_print=True):
+def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512, should_print=False):
     """Predicts the type of file.
-
     filename (str): Name of file to predict the type of.
     trained_classifier: (sklearn model): Trained model.
     feature (str): Type of feature that trained_classifier was trained on.
     """
-    
-    # print(f"Trained classifier: {trained_classifier}")
-    # class_table =
 
     if should_print:
         print(f"Filename: {filename}")
@@ -41,13 +37,11 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     x = np.array([int.from_bytes(c, byteorder="big") for c in data])
     x = [x]
 
-    #print(f"x: {x}")
-    #print(type(x))
     prediction = trained_classifier.predict(x)
     prediction_probabilities = probability_dictionary(trained_classifier.predict_proba(x)[0], label_map)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-    return label, prediction_probabilities
+    return label, prediction_probabilities, x
 
 def predict_directory(dir_name, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
     """
@@ -65,7 +59,7 @@ def predict_directory(dir_name, trained_classifier, class_table_name, feature, h
         for file_name in files:
             file_path = os.path.join(subdir, file_name)
             file_dict = dict()
-            label, probabilities = predict_single_file(file_path, trained_classifier, class_table_name, feature, head_bytes, rand_bytes, should_print=False)
+            label, probabilities, _ = predict_single_file(file_path, trained_classifier, class_table_name, feature, head_bytes, rand_bytes, should_print=False)
             file_dict['label'] = label
             file_dict['probabilities'] = probabilities
             file_predictions[file_path] = file_dict
