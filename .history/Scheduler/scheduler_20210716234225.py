@@ -26,7 +26,8 @@ class Scheduler:
 					break
 			if index >= 5:
 				break
-		
+		for elem in file_list:
+			print(elem)
 
 		heapq.heapify(file_list)
 		return file_list
@@ -50,6 +51,9 @@ if __name__ == "__main__":
 	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-16-23:20:14.pkl"))
 
 	queue = scheduler.run("../../CDIACPub8")
+	print("")
+	for elem in queue:
+		print(elem)
 
 
 
