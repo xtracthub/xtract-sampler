@@ -56,4 +56,5 @@ classifiers/predict.py
 .gitignore
 directory_probability_predictions.json
 byteSizeData/
-Scheduler/EstimateTime/models/
+Scheduler/EstimateTime/models
+.history/
