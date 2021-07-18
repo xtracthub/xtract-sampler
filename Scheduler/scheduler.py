@@ -8,11 +8,12 @@ import pickle as pkl
 
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
 		self.time_models = self.get_time_models(time_model_directory)
+		self.test = test
 
 	def run(self, directory_path):
 		index = 0 		
@@ -28,9 +29,9 @@ class Scheduler:
 				file_list.append(file_estimated_cost(filename, costs))
 				index += 1
 
-				if index >= 2:
+				if self.test and index >= 2:
 					break
-			if index >= 10:
+			if self.test and index >= 10:
 				break
 
 		heapq.heapify(file_list)
@@ -84,7 +85,7 @@ if __name__ == "__main__":
 	scheduler = Scheduler(
 	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-16-23:20:14.json"),
 	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-16-23:20:14.pkl"),
-	 os.path.abspath("EstimateTime/models"))
+	 os.path.abspath("EstimateTime/models"), True)
 
 	queue = scheduler.run("../../CDIACPub8")
 
