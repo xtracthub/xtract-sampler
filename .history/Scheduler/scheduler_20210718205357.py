@@ -23,9 +23,7 @@ class Scheduler:
 			for file in files:
 				filename = os.path.join(subdir, file)
 				label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
-				probabilities = 1 - probabilities
-				times = self.calculate_times(filename)
-				file_list.append(file_estimated_cost(filename, np.multiply(probabilities, times)))
+				file_list.append(file_estimated_cost(filename, probabilities))
 				index += 1
 
 				if index >= 3:
@@ -51,7 +49,8 @@ class Scheduler:
 				times[idx] = self.times_models[key].predict(log(filesize))
 			else:
 				times[idx] = self.time_models[key].predict(os.path)
-		return times
+
+
 
 	def get_time_models(self, time_model_directory):
 		models = dict()
@@ -72,10 +71,10 @@ class file_estimated_cost:
 		self.probabilities = probabilities
 		print(probabilities)
 	def __repr__(self):
-		return "File path: " + self.file_name + " Cost " + str(min(self.probabilities.values()))
+		return "File path: " + self.file_name + " Probability: " + str(max(self.probabilities.values()))
 
 	def __lt__(self, other):
-		return min(self.probabilities.values()) > min(other.probabilities.values())
+		return max(self.probabilities.values()) > max(other.probabilities.values())
 
 
 if __name__ == "__main__":
