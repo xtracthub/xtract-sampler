@@ -6,7 +6,7 @@ from features.readers.readers import FileReader
 from features.randbytes import RandBytes
 from features.randhead import RandHead
 from sklearn.metrics import precision_score, recall_score
-
+import time
 
 def predict_single_file(filename, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512, should_print=False):
     """Predicts the type of file.
@@ -15,6 +15,7 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     feature (str): Type of feature that trained_classifier was trained on.
     """
 
+    start_extract_time = time.time()
     if should_print:
         print(f"Filename: {filename}")
         #print(f"Class table path: {class_table_name}")
@@ -33,6 +34,9 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     reader = FileReader(feature_maker=features, filename=filename)
     reader.run()
 
+    predict_start_time = time.time()
+    extract_time = predict_start_time - start_extract_time
+
     data = [line for line in reader.data][2]
     x = np.array([int.from_bytes(c, byteorder="big") for c in data])
     x = [x]
@@ -41,7 +45,10 @@ def predict_single_file(filename, trained_classifier, class_table_name, feature,
     prediction_probabilities = probability_dictionary(trained_classifier.predict_proba(x)[0], label_map)
 
     label = (list(label_map.keys())[list(label_map.values()).index(int(prediction[0]))])
-    return label, prediction_probabilities, x
+
+    predict_time = time.time() - predict_start_time
+
+    return label, prediction_probabilities, x, extract_time, predict_time
 
 def predict_directory(dir_name, trained_classifier, class_table_name, feature, head_bytes=512, rand_bytes=512):
     """

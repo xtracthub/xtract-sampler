@@ -21,29 +21,47 @@ class Scheduler:
 	def run(self, directory_path):
 		index = 0 		
 		file_list = []
+		heapq.heapify(file_list)
 		# we do -1 here because we need to calculate time DIFFERENCES 
 		# so we don't need the last element 
-		for i in range(len(self.file_crawl_map.index) - 1):
+		pipeline_times = []
+		for i in range(len(self.file_crawl_map.index)):
+			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 5. Extraction time 
 			filename = self.file_crawl_map["petrel_path"][i]
-			elapsed_time = self.file_crawl_map["crawl_timestamp"][i+1] - self.file_crawl_map["crawl_timestamp"][i]
+
+
+			if i == 0:
+				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
+			else:
+				elapsed_time = self.file_crawl_map["crawl_timestamp"][i] - self.file_crawl_map["crawl_timestamp"][i - 1]
+			file_time.append(filename)
+			file_time.append(elapsed_time)
 			time.sleep(elapsed_time)
 
-			label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
+			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
+			
+			file_time.append(extract_time)
+			file_time.append(predict_time)
+
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
 			times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
-			#print(probabilities)
-			#print(times)
 			costs = np.multiply(probabilities, times)
-			print(costs)
-			file_list.append(file_estimated_cost(filename, costs))
+
+			insert_start_time = time.time()
+			heapq.heappush(file_list, file_estimated_cost(filename,-1 * costs)) # TODO: compare heap insertion vs. heapifying everything at the end
+			insert_time = time.time() - insert_start_time
+
+			file_time.append(insert_time)
+			file_time.append(times[np.argmax(costs)])
 			index += 1
 
+			pipeline_times.append(file_time)
 			if self.test and index >= 3:
 				#merely for testing
 				break
 
-		heapq.heapify(file_list)
-		return file_list
+		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time", "metadata_extract_time"])
+		return file_list, pipeline_times
 	
 	def calculate_times(self, filename):
 		'''
@@ -84,9 +102,11 @@ class file_estimated_cost:
 		self.file_name = file_name
 		self.costs = costs
 	def __repr__(self):
-		return "File path: " + self.file_name + " Cost " + str(np.amax(self.costs))
+		return "File path: " + self.file_name + " Cost: " + str(self.best_extractor())
 	def __lt__(self, other):
-		return np.amax(self.costs) > np.amax(other.costs)
+		return self.best_extractor() > other.best_extractor()
+	def best_extractor(self):
+		return np.amax(-1 * self.costs)
 
 
 if __name__ == "__main__":
@@ -96,14 +116,15 @@ if __name__ == "__main__":
 	 os.path.abspath("EstimateTime/models"), "filename_crawl_t_map_processed.csv", True)
 
 	start_time = time.time()
-	queue = scheduler.run("../../CDIACPub8")
+	queue, times = scheduler.run("../../CDIACPub8")
 	print("--- %s seconds ---" % (time.time() - start_time))
 
 
-	'''
+	print(times)
+
 	for elem in queue:
 		print(elem)
-	'''
+	
 
 
 
