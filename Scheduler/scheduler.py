@@ -25,6 +25,10 @@ class Scheduler:
 		# we do -1 here because we need to calculate time DIFFERENCES 
 		# so we don't need the last element 
 		pipeline_times = []
+
+		with open(self.class_table, "r") as fp2:
+			class_table = json.load(fp2)
+
 		for i in range(len(self.file_crawl_map.index)):
 			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 5. Extraction time 
 			filename = self.file_crawl_map["petrel_path"][i]
@@ -43,7 +47,7 @@ class Scheduler:
 			file_time.append(predict_time)
 
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
-			times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
+			times = 1/(np.exp(self.calculate_times(filename, class_table)) + np.finfo(float).eps)
 			costs = np.multiply(probabilities, times)
 
 			insert_start_time = time.time()
@@ -62,12 +66,10 @@ class Scheduler:
 		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time", "metadata_extract_time"])
 		return file_list, pipeline_times
 	
-	def calculate_times(self, filename):
+	def calculate_times(self, filename, class_table):
 		'''
 		Note to self we could use these times and probabilities for a dot/cross product?
 		'''
-		with open(self.class_table, "r") as fp2:
-			class_table = json.load(fp2)
 		filesize = np.array([os.path.getsize(filename)]).reshape(1, -1)
 		times = np.zeros(len(class_table.keys()))
 		for idx, key in enumerate(class_table.keys()):
@@ -82,6 +84,11 @@ class Scheduler:
 				times[idx] = self.time_models[key].predict(filesize)
 			else:
 				times[idx] = self.time_models[key].predict(filesize)
+
+		for i in range(times):
+			if times[i] <= 0:
+				times[i] = np.finfo(float).eps
+
 		return times
 
 	def get_time_models(self, time_model_directory):
@@ -95,6 +102,17 @@ class Scheduler:
 					models[type.lower()] = pipeline
 		models["unknown"] = 0.5
 		return models
+
+	def get_size_models(self, size_model_directory):
+		models = dict()
+		for subdir, dirs, files, in os.walk(size_model_directory):
+			for file in files:
+				
+		models["unknown"] = 0
+		models["netcdf"] = 5506.276923076923
+	
+	def calculate_estimated_size(self, filename):
+
 
 class file_estimated_cost:
 	def __init__(self, file_name, costs):

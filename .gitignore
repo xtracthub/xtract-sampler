@@ -57,4 +57,5 @@ classifiers/predict.py
 directory_probability_predictions.json
 byteSizeData/
 Scheduler/EstimateTime/models
+Scheduler/EstimateSize/models
 .history/
