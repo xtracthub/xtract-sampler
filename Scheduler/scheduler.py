@@ -5,15 +5,18 @@ from math import exp, log
 import pickle, json, heapq 
 import numpy as np
 import pickle as pkl
+import time
+import pandas as pd
 
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, file_crawl_map_path, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
 		self.time_models = self.get_time_models(time_model_directory)
 		self.test = test
+		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
 
 	def run(self, directory_path):
 		index = 0 		
@@ -22,8 +25,8 @@ class Scheduler:
 			for file in files:
 				filename = os.path.join(subdir, file)
 				label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
-				probabilities = ((1/(np.array(list(probabilities.values()))  + np.finfo(float).eps ))) # sometimes the probabilities are 0
-				times = np.exp(self.calculate_times(filename))
+				probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
+				times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
 				costs = np.multiply(probabilities, times)
 
 				file_list.append(file_estimated_cost(filename, costs))
