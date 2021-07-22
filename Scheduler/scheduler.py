@@ -29,7 +29,6 @@ class Scheduler:
 			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 5. Extraction time 
 			filename = self.file_crawl_map["petrel_path"][i]
 
-
 			if i == 0:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
 			else:
@@ -118,8 +117,6 @@ if __name__ == "__main__":
 	start_time = time.time()
 	queue, times = scheduler.run("../../CDIACPub8")
 	print("--- %s seconds ---" % (time.time() - start_time))
-
-
 	print(times)
 
 	for elem in queue:
