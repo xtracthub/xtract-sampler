@@ -21,20 +21,23 @@ class Scheduler:
 	def run(self, directory_path):
 		index = 0 		
 		file_list = []
-		for subdir, dirs, files in os.walk(directory_path):
-			for file in files:
-				filename = os.path.join(subdir, file)
-				label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
-				probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
-				times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
-				costs = np.multiply(probabilities, times)
+		# we do -1 here because we need to calculate time DIFFERENCES 
+		# so we don't need the last element 
+		for i in range(len(self.file_crawl_map.index) - 1):
+			filename = self.file_crawl_map["petrel_path"][i]
+			elapsed_time = self.file_crawl_map["crawl_timestamp"][i+1] - self.file_crawl_map["crawl_timestamp"][i]
+			time.sleep(elapsed_time)
 
-				file_list.append(file_estimated_cost(filename, costs))
-				index += 1
+			label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
+			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
+			times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
+			costs = np.multiply(probabilities, times)
 
-				if self.test and index >= 2:
-					break
+			file_list.append(file_estimated_cost(filename, costs))
+			index += 1
+
 			if self.test and index >= 10:
+				#merely for testing
 				break
 
 		heapq.heapify(file_list)
