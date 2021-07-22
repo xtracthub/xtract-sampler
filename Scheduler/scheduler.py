@@ -31,12 +31,14 @@ class Scheduler:
 			label, probabilities, _ = predict.predict_single_file(filename, self.model, self.class_table, "head")
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
 			times = 1/(np.exp(self.calculate_times(filename)) + np.finfo(float).eps)
+			#print(probabilities)
+			#print(times)
 			costs = np.multiply(probabilities, times)
-
+			print(costs)
 			file_list.append(file_estimated_cost(filename, costs))
 			index += 1
 
-			if self.test and index >= 10:
+			if self.test and index >= 3:
 				#merely for testing
 				break
 
@@ -82,22 +84,26 @@ class file_estimated_cost:
 		self.file_name = file_name
 		self.costs = costs
 	def __repr__(self):
-		return "File path: " + self.file_name + " Cost " + str(np.amin(self.costs))
+		return "File path: " + self.file_name + " Cost " + str(np.amax(self.costs))
 	def __lt__(self, other):
-		return np.amin(self.costs) < np.amin(other.costs)
+		return np.amax(self.costs) > np.amax(other.costs)
 
 
 if __name__ == "__main__":
 	scheduler = Scheduler(
-	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-16-23:20:14.json"),
-	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-16-23:20:14.pkl"),
-	 os.path.abspath("EstimateTime/models"), True)
+	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
+	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
+	 os.path.abspath("EstimateTime/models"), "filename_crawl_t_map_processed.csv", True)
 
+	start_time = time.time()
 	queue = scheduler.run("../../CDIACPub8")
+	print("--- %s seconds ---" % (time.time() - start_time))
 
+
+	'''
 	for elem in queue:
 		print(elem)
-
+	'''
 
 
 
