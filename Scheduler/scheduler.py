@@ -61,9 +61,9 @@ class Scheduler:
 			index += 1
 
 			pipeline_times.append(file_time)
-			if self.test and index >= 6:
-				#merely for testing
-				break
+			#if self.test and index >= 6:
+			#merely for testing
+			#	break
 
 		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time", "metadata_extract_time"])
 		return file_list, pipeline_times
@@ -154,16 +154,23 @@ if __name__ == "__main__":
 	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
 	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
 	 os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
-	 "filename_crawl_t_map_processed.csv", True)
+	 "filename_crawl_t_map_processed.csv", False)
 
 	start_time = time.time()
 	queue, times = scheduler.run("../../CDIACPub8")
 	print("--- %s seconds ---" % (time.time() - start_time))
-	print(times)
+	print(times.head())
 
+
+	times.to_csv("times.csv")
+	with open("queue.pkl", "wb+") as fp:
+		pkl.dump(queue)
+
+
+	'''
 	for elem in queue:
 		print(elem)
-	
+	'''
 
 
 
