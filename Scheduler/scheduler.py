@@ -58,7 +58,6 @@ class Scheduler:
 			insert_time = time.time() - insert_start_time
 
 			file_time.append(insert_time)
-			file_time.append(file
 			
 			if index % 2000 == 0:
 				print("Done with another two thousand:", index)
@@ -203,7 +202,3 @@ if __name__ == "__main__":
 	for elem in queue:
 		print(elem)
 	'''
-
-
-
-	
