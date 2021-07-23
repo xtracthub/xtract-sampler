@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
 	times.to_csv("times.csv")
 	with open("queue.pkl", "wb+") as fp:
-		pkl.dump(queue)
+		pkl.dump(queue, fp)
 
 
 	'''

@@ -59,3 +59,5 @@ byteSizeData/
 Scheduler/EstimateTime/models
 Scheduler/EstimateSize/models
 .history/
+Scheduler/queue.pkl
+Scheduler/times.csv
