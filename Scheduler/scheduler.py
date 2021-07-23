@@ -58,9 +58,14 @@ class Scheduler:
 
 			file_time.append(insert_time)
 			file_time.append(times[np.argmax(costs)])
+			
+			if index % 2000 == 0:
+				print("Done with another two thousand:", index)
+			
 			index += 1
 
 			pipeline_times.append(file_time)
+
 			#if self.test and index >= 6:
 			#merely for testing
 			#	break
@@ -72,7 +77,13 @@ class Scheduler:
 		'''
 		Note to self we could use these times and probabilities for a dot/cross product?
 		'''
-		filesize = np.array([os.path.getsize(filename)]).reshape(1, -1)
+
+		if os.path.getsize(filename) <= 0:
+			filesize = 2
+		else:
+			filesize = os.path.getsize(filename)
+
+		filesize = np.array([filesize]).reshape(1, -1)
 		times = np.zeros(len(class_table.keys()))
 		for idx, key in enumerate(class_table.keys()):
 			if key == "unknown":
@@ -120,7 +131,13 @@ class Scheduler:
 		return models
 
 	def calculate_estimated_size(self, filename, class_table):
-		filesize = np.array([os.path.getsize(filename)]).reshape(1, -1)
+
+		if os.path.getsize(filename) <= 0:
+			filesize = 2
+		else:
+			filesize = os.path.getsize(filename)
+
+		filesize = np.array([filesize]).reshape(1, -1)
 		sizes = np.zeros(len(class_table.keys()))
 		for idx, key in enumerate(class_table.keys()):
 			if key == "unknown" or key == "netcdf":
@@ -130,7 +147,6 @@ class Scheduler:
 				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
 			else:
 				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
-				 
 		for i in range(len(sizes)):
 			if sizes[i] <= 0:
 				sizes[i] = np.finfo(float).eps
