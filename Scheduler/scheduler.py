@@ -10,11 +10,12 @@ import pandas as pd
 
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, file_crawl_map_path, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
 		self.time_models = self.get_time_models(time_model_directory)
+		self.size_models = self.get_size_models(size_model_directory)
 		self.test = test
 		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
 
@@ -47,9 +48,10 @@ class Scheduler:
 			file_time.append(predict_time)
 
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
-			times = 1/(np.exp(self.calculate_times(filename, class_table)) + np.finfo(float).eps)
-			costs = np.multiply(probabilities, times)
-
+			sizes = self.calculate_estimated_size(filename, class_table)
+			times = 1/self.calculate_times(filename, class_table) 
+			costs = np.log(np.multiply(sizes, np.multiply(probabilities, times)) + np.finfo(float).eps)
+			#print(costs)
 			insert_start_time = time.time()
 			heapq.heappush(file_list, file_estimated_cost(filename,-1 * costs)) # TODO: compare heap insertion vs. heapifying everything at the end
 			insert_time = time.time() - insert_start_time
@@ -59,7 +61,7 @@ class Scheduler:
 			index += 1
 
 			pipeline_times.append(file_time)
-			if self.test and index >= 3:
+			if self.test and index >= 6:
 				#merely for testing
 				break
 
@@ -85,7 +87,7 @@ class Scheduler:
 			else:
 				times[idx] = self.time_models[key].predict(filesize)
 
-		for i in range(times):
+		for i in range(len(times)):
 			if times[i] <= 0:
 				times[i] = np.finfo(float).eps
 
@@ -107,12 +109,33 @@ class Scheduler:
 		models = dict()
 		for subdir, dirs, files, in os.walk(size_model_directory):
 			for file in files:
-				
+				filepath = os.path.join(subdir, file)
+				with open(filepath, "rb") as fp:
+					pipeline = pkl.load(fp)
+					type = file.split("-")[0]
+					models[type.lower()] = pipeline
 		models["unknown"] = 0
 		models["netcdf"] = 5506.276923076923
-	
-	def calculate_estimated_size(self, filename):
 
+		return models
+
+	def calculate_estimated_size(self, filename, class_table):
+		filesize = np.array([os.path.getsize(filename)]).reshape(1, -1)
+		sizes = np.zeros(len(class_table.keys()))
+		for idx, key in enumerate(class_table.keys()):
+			if key == "unknown" or key == "netcdf":
+				sizes[idx] = self.size_models[key]
+			elif key == "json/xml":
+				key = "jsonxml" 
+				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
+			else:
+				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
+				 
+		for i in range(len(sizes)):
+			if sizes[i] <= 0:
+				sizes[i] = np.finfo(float).eps
+
+		return sizes
 
 class file_estimated_cost:
 	def __init__(self, file_name, costs):
@@ -130,7 +153,8 @@ if __name__ == "__main__":
 	scheduler = Scheduler(
 	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
 	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
-	 os.path.abspath("EstimateTime/models"), "filename_crawl_t_map_processed.csv", True)
+	 os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
+	 "filename_crawl_t_map_processed.csv", True)
 
 	start_time = time.time()
 	queue, times = scheduler.run("../../CDIACPub8")
