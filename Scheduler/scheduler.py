@@ -1,4 +1,6 @@
-import sys, os 
+import sys, os
+
+from numpy.core.fromnumeric import argmax 
 sys.path.append(os.path.abspath(".."))
 from classifiers import predict
 from math import exp, log
@@ -50,14 +52,13 @@ class Scheduler:
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
 			sizes = self.calculate_estimated_size(filename, class_table)
 			times = 1/self.calculate_times(filename, class_table) 
-			costs = np.log(np.multiply(sizes, np.multiply(probabilities, times)) + np.finfo(float).eps)
-			#print(costs)
+			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
 			insert_start_time = time.time()
-			heapq.heappush(file_list, file_estimated_cost(filename,-1 * costs)) # TODO: compare heap insertion vs. heapifying everything at the end
+			heapq.heappush(file_list, file_cost) # TODO: compare heap insertion vs. heapifying everything at the end
 			insert_time = time.time() - insert_start_time
 
 			file_time.append(insert_time)
-			file_time.append(times[np.argmax(costs)])
+			file_time.append(file
 			
 			if index % 2000 == 0:
 				print("Done with another two thousand:", index)
@@ -154,16 +155,31 @@ class Scheduler:
 		return sizes
 
 class file_estimated_cost:
-	def __init__(self, file_name, costs):
+	def __init__(self, file_name, probabilities, sizes, times):
 		self.file_name = file_name
-		self.costs = costs
+		self.probabilities = probabilities
+		self.sizes = sizes
+		self.times = times
+		self.costs = -1 * np.log(np.multiply(self.sizes, 
+							np.multiply(self.probabilities, self.times)) 
+							+ np.finfo(float).eps)
+
 	def __repr__(self):
 		return "File path: " + self.file_name + " Cost: " + str(self.best_extractor())
 	def __lt__(self, other):
 		return self.best_extractor() > other.best_extractor()
 	def best_extractor(self):
 		return np.amax(-1 * self.costs)
-
+	def best_extractor_index(self):
+		return np.argmax(-1 * self.costs)
+	def get_probabilities(self):
+		return self.probabilities
+	def get_sizes(self):
+		return self.sizes
+	def get_times(self):
+		return self.times
+	def get_filename(self):
+		return self.file_name
 
 if __name__ == "__main__":
 	scheduler = Scheduler(
