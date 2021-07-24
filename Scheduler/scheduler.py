@@ -33,7 +33,7 @@ class Scheduler:
 			class_table = json.load(fp2)
 
 		for i in range(len(self.file_crawl_map.index)):
-			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 5. Extraction time 
+			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 
 			filename = self.file_crawl_map["petrel_path"][i]
 
 			if i == 0:
@@ -58,19 +58,19 @@ class Scheduler:
 			insert_time = time.time() - insert_start_time
 
 			file_time.append(insert_time)
-			
+
+			index += 1	
 			if index % 2000 == 0:
 				print("Done with another two thousand:", index)
 			
-			index += 1
 
 			pipeline_times.append(file_time)
-
-			#if self.test and index >= 6:
-			#merely for testing
-			#	break
-
-		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time", "metadata_extract_time"])
+			'''
+			if self.test and index >= 6:
+				#merely for testing
+				break
+			'''
+		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time"])
 		return file_list, pipeline_times
 	
 	def calculate_times(self, filename, class_table):
