@@ -113,7 +113,7 @@ class Scheduler:
 					pipeline = pkl.load(fp)
 					type = file.split("-")[0]
 					models[type.lower()] = pipeline
-		models["unknown"] = 0.5
+		models["unknown"] = 10
 		return models
 
 	def get_size_models(self, size_model_directory):
@@ -162,11 +162,6 @@ class file_estimated_cost:
 		self.costs = -1 * np.log(np.multiply(self.sizes, 
 							np.multiply(self.probabilities, self.times)) 
 							+ np.finfo(float).eps)
-
-	def __repr__(self):
-		return "File path: " + self.file_name + " Cost: " + str(self.best_extractor())
-	def __lt__(self, other):
-		return self.best_extractor() > other.best_extractor()
 	def best_extractor(self):
 		return np.amax(-1 * self.costs)
 	def best_extractor_index(self):
@@ -179,6 +174,10 @@ class file_estimated_cost:
 		return self.times
 	def get_filename(self):
 		return self.file_name
+	def __repr__(self):
+		return "File path: " + self.file_name + " Cost: " + str(self.best_extractor())
+	def __lt__(self, other):
+		return self.best_extractor() > other.best_extractor()
 
 if __name__ == "__main__":
 	scheduler = Scheduler(
