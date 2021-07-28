@@ -101,11 +101,11 @@ class Scheduler:
 			exit()
 
 		
-		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
-		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(mp.cpu_count() / 2))]
+		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(1))]
+		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(1))]
 
-		self.simulate_crawl() 
 
+		self.simulate_crawl()
 		for p in enqueue_processes:
 			p.start()
 		
