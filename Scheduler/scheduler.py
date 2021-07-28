@@ -1,5 +1,4 @@
 import sys, os
-
 from numpy.core.fromnumeric import argmax 
 sys.path.append(os.path.abspath(".."))
 from classifiers import predict
@@ -9,70 +8,104 @@ import numpy as np
 import pickle as pkl
 import time
 import pandas as pd
-
+import multiprocessing as mp
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
+		
+		with open(self.class_table, "r") as fp2: 
+			self.class_table_dict = json.load(fp2)
+		
+		self.extraction_times = pd.read_csv(actual_extraction_times, index_col=0)
+
 		self.time_models = self.get_time_models(time_model_directory)
 		self.size_models = self.get_size_models(size_model_directory)
 		self.test = test
 		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
+		
+		self.crawl_queue = []
+		self.xtract_queue = []
 
-	def run(self, directory_path):
-		index = 0 		
-		file_list = []
-		heapq.heapify(file_list)
-		# we do -1 here because we need to calculate time DIFFERENCES 
-		# so we don't need the last element 
-		pipeline_times = []
 
-		with open(self.class_table, "r") as fp2:
-			class_table = json.load(fp2)
-
+	def simulate_crawl(self):
 		for i in range(len(self.file_crawl_map.index)):
-			file_time = [] # measures 0. filename 1. crawl time 2. feature extraction 3. Prediction Time 4. Heap insertion 
-			filename = self.file_crawl_map["petrel_path"][i]
-
+			heapq.heappush(self.crawl_queue, (self.file_crawl_map["crawl_timestamp"][i], self.file_crawl_map["petrel_path"][i]))
 			if i == 0:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
 			else:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i] - self.file_crawl_map["crawl_timestamp"][i - 1]
-			file_time.append(filename)
-			file_time.append(elapsed_time)
 			time.sleep(elapsed_time)
 
-			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
-			
-			file_time.append(extract_time)
-			file_time.append(predict_time)
+	def run(self, directory_path):
+		start_time = time.time()
+		lock = mp.Lock()
 
-			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
-			sizes = self.calculate_estimated_size(filename, class_table)
-			times = 1/self.calculate_times(filename, class_table) 
-			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
-			insert_start_time = time.time()
-			heapq.heappush(file_list, file_cost) # TODO: compare heap insertion vs. heapifying everything at the end
-			insert_time = time.time() - insert_start_time
+		if mp.cpu_count() % 2 != 0:
+			print("This program only works on even-cored processors")
+			exit()
+		
+		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
+		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
 
-			file_time.append(insert_time)
+		self.simulate_crawl() 
 
-			index += 1	
-			if index % 2000 == 0:
-				print("Done with another two thousand:", index)
-			
+		for p in enqueue_processes:
+			p.start()
+		
+		for p in dequeue_processes:
+			p.start()
+		
+		for p in enqueue_processes:
+			p.join()
 
-			pipeline_times.append(file_time)
-			'''
-			if self.test and index >= 6:
-				#merely for testing
-				break
-			'''
-		pipeline_times = pd.DataFrame(pipeline_times, columns=["filename", "crawl_time", "feature_extract_time", "predict_time", "heap_insert_time"])
-		return file_list, pipeline_times
+		for p in dequeue_processes:
+			p.join()
 	
+		print("--- %s seconds ---" % (time.time() - start_time))
+
+	def enqueue(self, lock):
+		while len(self.crawl_queue) != 0:
+			lock.acquire()
+			file_tuple = heapq.heappop(self.crawl_queue)
+			lock.release()
+			_, file_path = file_tuple
+			file_cost = self.calculate_costs(file_path)
+			lock.acquire()
+			heapq.heappush(self.xtract_queue, file_cost)
+			lock.release()
+
+
+	def dequeue(self, lock):
+		while len(self.xtract_queue) != 0 or len(self.crawl_queue) != 0:
+			lock.acquire()
+			file_cost = None
+			try:
+				file_cost = heapq.heappop(self.xtract_queue)
+			except IndexError:
+				pass	
+			finally:
+				lock.release()
+			if file_cost != None:
+				best_index = file_cost.best_extractor_index()
+				if best_index == 2: #skip unknowns
+					continue
+				extraction_time = self.extraction_times.loc[file_cost.get_filename()][best_index]
+				time.sleep(extraction_time)
+				print("Dequeue")
+
+
+	def calculate_costs(self, filename):
+			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
+			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
+			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
+			times = 1/self.calculate_times(filename, self.class_table_dict) 
+			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
+
+			return file_cost
+
 	def calculate_times(self, filename, class_table):
 		'''
 		Note to self we could use these times and probabilities for a dot/cross product?
@@ -152,6 +185,9 @@ class Scheduler:
 				sizes[i] = np.finfo(float).eps
 
 		return sizes
+	
+	def get_crawl_queue(self):
+		return self.crawl_queue
 
 class file_estimated_cost:
 	def __init__(self, file_name, probabilities, sizes, times):
@@ -184,17 +220,19 @@ if __name__ == "__main__":
 	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
 	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
 	 os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
-	 "filename_crawl_t_map_processed.csv", False)
+	 "filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", False)
 
 	start_time = time.time()
-	queue, times = scheduler.run("../../CDIACPub8")
+
+
+	times = scheduler.run("../../CDIACPub8")
 	print("--- %s seconds ---" % (time.time() - start_time))
-	print(times.head())
+	#print(times.head())
 
 
-	times.to_csv("times.csv")
-	with open("queue.pkl", "wb+") as fp:
-		pkl.dump(queue, fp)
+	#times.to_csv("times.csv")
+	#with open("queue.pkl", "wb+") as fp:
+	#pkl.dump(queue, fp)
 
 
 	'''

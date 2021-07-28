@@ -50,18 +50,17 @@ def score_model(model, X_test, Y_test):
     '''
 
     # UNCOMMENT TO MAKE ROC CURVE
-    '''
+    
     disp = plot_roc_curve(model, X_test, Y_test)
-    disp.ax_.set_title('ROC Curve')
-    plt.savefig(' ROC Curve', format='png')
-    '''
+    disp.ax_.set_title('RF ROC Curve')
+    plt.savefig('RF ROC Curve', format='png')
+
 
     # UNCOMMENT TO MAKE Precision Recall CURVE
-    '''
+    
     disp = plot_precision_recall_curve(model, X_test, Y_test)
-    disp.ax_.set_title(' PR Curve')
-    plt.savefig(' PR Curve', format='png')
-    '''
+    disp.ax_.set_title('RF PR Curve')
+    plt.savefig('RF PR Curve', format='png')
     
 
     return accuracy, avg_prec_score_overall, avg_recall_score_overall
