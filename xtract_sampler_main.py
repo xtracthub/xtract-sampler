@@ -66,7 +66,7 @@ def experiment(reader, classifier_name,
         classifier.train()
         print("done training")
         accuracy, prec, recall = score_model(classifier.model, classifier.X_test,
-                               classifier.Y_test)
+                               classifier.Y_test, classifier.class_table)
         classifier_time = time.time() - classifier_start
 
         outfile_name = "{path}-info-{size}.json".format(path=os.path.splitext(model_name)[0], size=str(reader.get_feature_maker().get_number_of_features())+'Bytes')

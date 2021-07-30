@@ -16,7 +16,6 @@ class ProxyPriorityQueue(PriorityQueue):
 	def get_attribute(self, name):
 		return getattr(self, name)
 
-
 class CustomManager(BaseManager):
 	pass
 
