@@ -9,14 +9,15 @@ import pickle as pkl
 import time
 import pandas as pd
 import multiprocessing as mp
-from multiprocessing.managers import BaseManager, MakeProxyType, public_methods
+from multiprocessing.managers import BaseManager, MakeProxyType, public_methods, SyncManager
 from queue import PriorityQueue, Empty
+from ctypes import c_char_p
 
 class ProxyPriorityQueue(PriorityQueue):
 	def get_attribute(self, name):
 		return getattr(self, name)
 
-class CustomManager(BaseManager):
+class CustomManager(SyncManager):
 	pass
 
 class file_estimated_cost:
@@ -51,7 +52,7 @@ class ProxyFileEstimatedCost(file_estimated_cost):
 
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times,extraction_threshold=1, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
@@ -65,10 +66,17 @@ class Scheduler:
 		self.size_models = self.get_size_models(size_model_directory)
 		self.test = test
 		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
-		
+
+		if extraction_threshold > 1 or extraction_threshold < 0:
+			print("The percentage to extract must be between 0 and 1")
+			exit()
+
+		self.file_count_threshold = len(self.file_crawl_map.index) * extraction_threshold
+
 		self.manager = self.get_manager()
 		self.crawl_queue = self.manager.PriorityQueue()
 		self.xtract_queue = self.manager.PriorityQueue()
+		self.dequeue_list = self.manager.dict()
 		self.file_index = mp.Value('i', 0)
 
 	def simulate_crawl(self):
@@ -76,6 +84,8 @@ class Scheduler:
 			self.crawl_queue.put((self.file_crawl_map["crawl_timestamp"][i], self.file_crawl_map["petrel_path"][i]))
 			if i == 0:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
+			elif i == self.file_count_threshold:
+				break
 			else:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i] - self.file_crawl_map["crawl_timestamp"][i - 1]
 			time.sleep(elapsed_time)
@@ -100,8 +110,8 @@ class Scheduler:
 			exit()
 
 		
-		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(1))]
-		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(1))]
+		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
+		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(mp.cpu_count() / 2))]
 
 
 		self.simulate_crawl()
@@ -120,12 +130,21 @@ class Scheduler:
 	
 		print("--- %s seconds ---" % (time.time() - start_time))
 
+		print("Length of dict:", len(self.dequeue_list))
+
+		dequeue_dict = dict(self.dequeue_list)
+
+		dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
+
+		with open("dequeue_list.json", "w+") as fp:
+			json.dump(dequeue_dict, fp, indent=4)
+
 	def enqueue(self, lock):
 		while not self.crawl_queue.empty():
 			#print("Enqueue file tuple lock")
 			#lock.acquire()
 			#try:
-			file_tuple = self.crawl_queue.get()
+			file_tuple = self.crawl_queue.get(timeout=120)
 			#finally:
 			#	print("Enqueue file tuple lock released")
 			#	lock.release()
@@ -162,6 +181,8 @@ class Scheduler:
 				extraction_time = self.extraction_times.loc[file_cost.get_filename()][best_index]
 				time.sleep(extraction_time)
 				file_index.value += 1
+				self.dequeue_list[file_cost.get_filename()] = best_index
+				#self.dequeue_list[self.manager.Value(c_char_p, file_cost.get_filename())] = self.manager.Value('i', best_index)
 				print("Dequeue:", file_index.value, "Extraction time:", extraction_time)
 
 
@@ -270,6 +291,8 @@ if __name__ == "__main__":
 
 	times = scheduler.run("../../CDIACPub8")
 	print("--- %s seconds ---" % (time.time() - start_time))
+
+
 	#print(times.head())
 
 
