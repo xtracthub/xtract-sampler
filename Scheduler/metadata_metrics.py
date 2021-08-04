@@ -1,4 +1,6 @@
 import json
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
 
 def readability_score(filepath):
     def flatten_values(data):
@@ -235,3 +237,59 @@ def completeness_score_tabular(filepath):
         cur_number_of_fields = len(cur_flattened_fields)
     percent = (cur_number_of_fields/max_fields) * 100
     return percent
+
+def tfidf_score(filepath):
+    def flatten_values(data):
+        vals = []
+        for key in data:
+            if isinstance(data[key], dict):
+                x = flatten_values(data[key])
+                vals.extend(x)
+            else:
+                if isinstance(data[key], list):
+                    vals.extend(data[key])
+                else:
+                    vals.append(data[key])
+        return vals
+    text = ''
+    with open (filepath, 'r') as f:
+        data = json.load(f)
+        vals = flatten_values(data)
+        for val in vals:
+            if isinstance(val, str):
+                text = text + ' ' + val
+    
+    vectorizer = TfidfVectorizer()
+    '''
+    #try:
+    vectors = vectorizer.fit_transform([text])
+    print(text)
+    feature_names = vectorizer.get_feature_names()
+    dense = vectors.todense()
+    denselist = dense.tolist()
+    df = pd.DataFrame(denselist, columns = feature_names)
+    total = 0
+    for val in denselist:
+        total += val
+    return total/len(feature_names)
+    #except Exception as e:
+        #print(e)
+        #return 0
+    '''
+    try:
+        vectors = vectorizer.fit_transform([text])
+        feature_names = vectorizer.get_feature_names()
+        dense = vectors.todense()
+        denselist = dense.tolist()
+        df = pd.DataFrame(denselist, columns = feature_names)
+        total = 0
+        for col in df.columns:
+            vals = df.loc[:,col]
+            for val in vals:
+                total += val
+        return total/len(df.columns)
+    except ValueError:
+        return 0
+
+#score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACJSONXMLExtracted/09AR20151209_OME_PI.xmlJSONXMLXtract8998.json')
+#print(score)

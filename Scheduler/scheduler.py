@@ -1,3 +1,4 @@
+from re import L
 import sys, os
 from numpy.core.fromnumeric import argmax 
 sys.path.append(os.path.abspath(".."))
@@ -20,6 +21,39 @@ class ProxyPriorityQueue(PriorityQueue):
 class CustomManager(SyncManager):
 	pass
 
+
+class file_extractor_estimated_cost:
+	def __init__(self, file_name, extractor, probability, size, time):
+		self.file_name = file_name
+		self.probability = probability
+		self.size = size
+		self.time = time
+		self.cost = -1 * self.calculate_cost()
+		self.extractor = extractor
+	def get_cost(self):
+		return self.cost
+	def get_probability(self):
+		return self.probability
+	def get_sizes(self):
+		return self.size
+	def get_times(self):
+		return self.time
+	def get_filename(self):
+		return self.file_name
+	def get_extractor(self):
+		return self.extractor
+	def __repr__(self):
+		return "File path: " + self.file_name + "Extractor: " + self.extractor + " Cost: " + str(self.cost)
+	def __lt__(self, other):
+		return self.cost > other.cost
+	def calculate_cost(self):
+		sizes_probability = self.size * self.probability + 1  # smoothing
+		cost_raw = sizes_probability / (self.time + np.finfo(float).eps + 1) # so we don't get divide by zero cost
+		return -1 * log(cost_raw)
+
+'''
+	DO NOT USE 
+	LEGACY CLASS
 class file_estimated_cost:
 	def __init__(self, file_name, probabilities, sizes, times):
 		self.file_name = file_name
@@ -46,7 +80,7 @@ class file_estimated_cost:
 	def __lt__(self, other):
 		return self.best_extractor() > other.best_extractor()
 	def calculate_cost(self):
-		sizes_probabilities = np.multiply(self.sizes, self.probabilities) # smoothing
+		sizes_probabilities = np.multiply(self.sizes, self.probabilities) + 1  # smoothing
 		cost_raw = np.multiply(sizes_probabilities, self.times) + np.finfo(float).eps # so we get nonzero cost
 		return -1 * np.log(cost_raw)
 
@@ -54,7 +88,7 @@ class file_estimated_cost:
 class ProxyFileEstimatedCost(file_estimated_cost):
 	def get_attribute(self, name):
 		return getattr(self, name)
-
+'''
 
 class Scheduler:
 	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times,extraction_threshold=1, test=False):
@@ -82,7 +116,7 @@ class Scheduler:
 		self.manager = self.get_manager()
 		self.crawl_queue = self.manager.PriorityQueue()
 		self.xtract_queue = self.manager.PriorityQueue()
-		self.dequeue_list = self.manager.dict()
+		self.dequeue_list = self.manager.Queue()
 		self.file_index = mp.Value('i', 0)
 		self.zero_extraction = mp.Value('i', 0)
 
@@ -98,7 +132,7 @@ class Scheduler:
 
 	def get_manager(self):
 		PriorityQueueProxy = MakeProxyType("PriorityQueue", public_methods(PriorityQueue))
-		FileEstimatedCostProxy = MakeProxyType("file_estimated_cost", public_methods(file_estimated_cost))
+		#FileEstimatedCostProxy = MakeProxyType("file_estimated_cost", public_methods(file_estimated_cost))
 
 		CustomManager.register("PriorityQueue", PriorityQueue, PriorityQueueProxy)
 		#CustomManager.register("file_estimated_cost", file_estimated_cost, FileEstimatedCostProxy)
@@ -106,7 +140,7 @@ class Scheduler:
 		m.start()
 		return m
 
-	def run(self, directory_path):
+	def run(self):
 		start_time = time.time()
 		lock = mp.Lock()
 
@@ -118,6 +152,7 @@ class Scheduler:
 		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
 		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(mp.cpu_count() / 2))]
 
+		print("Extraction threshold: ", self.file_count_threshold)
 
 		self.simulate_crawl()
 		for p in enqueue_processes:
@@ -137,14 +172,20 @@ class Scheduler:
 
 		print("Zero Extraction Times", self.zero_extraction.value)
 
-		print("Length of dict:", len(self.dequeue_list))
+		print("Length of dict:", self.dequeue_list.qsize())
 
-		dequeue_dict = dict(self.dequeue_list)
+		print(type(self.dequeue_list))
+		print("Dequeue List", self.dequeue_list)
 
-		dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
+		while not self.dequeue_list.empty():
+			print(self.dequeue_list.get())
+		
+		#dequeue_dict = dict(self.dequeue_list)
 
-		with open("Experiment2/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
-			json.dump(dequeue_dict, fp, indent=4)
+		#dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
+
+		#with open("Experiment2/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
+		#	json.dump(dequeue_dict, fp, indent=4)
 
 	def enqueue(self, lock):
 		while not self.crawl_queue.empty():
@@ -159,12 +200,12 @@ class Scheduler:
 			#	print("Enqueue file tuple lock released")
 			#	lock.release()
 			_, file_path = file_tuple
-			file_cost = self.calculate_costs(file_path)
-			
+			file_costs = self.calculate_costs(file_path)
 			#print("Enqueue push onto the heap lock")
 			#lock.acquire()
 			#try:
-			self.xtract_queue.put(file_cost)
+			for file_cost in file_costs:
+				self.xtract_queue.put(file_cost)
 			#finally:
 			#	print("Enqueue push onto the heap lock released")
 			#	lock.release()
@@ -179,33 +220,46 @@ class Scheduler:
 			except IndexError:
 				print("Nothing in xtract queue")
 				pass	
+			except TypeError:
+				print(type(self.xtract_queue))
+				exit()
 			except Empty:
 				print("Took too long to get from queue")
 				pass
 			#finally:
 				#lock.release()
 			if file_cost != None:
-				best_index = file_cost.best_extractor_index()
-				if best_index == 2: #skip unknowns
+				extractor = file_cost.get_extractor()
+				extractor_idx = self.class_table_dict[extractor] - 1
+				if extractor == 'unknown': #skip unknowns
 					continue
-				extraction_time = self.extraction_times.loc[file_cost.get_filename()][best_index]
+				extraction_time = self.extraction_times.loc[file_cost.get_filename()][extractor_idx]
 				time.sleep(extraction_time)
 				file_index.value += 1
 				if extraction_time == 0:
 					self.zero_extraction.value += 1
-				self.dequeue_list[file_cost.get_filename()] = best_index
+				self.dequeue_list.put((file_cost.get_filename(), extractor_idx, file_cost.get_cost()))
 				#self.dequeue_list[self.manager.Value(c_char_p, file_cost.get_filename())] = self.manager.Value('i', best_index)
 				#print("Dequeue:", file_index.value, "Extraction time:", extraction_time)
 
 
 	def calculate_costs(self, filename):
-			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
-			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
-			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
-			times = 1/(self.calculate_times(filename, self.class_table_dict)) 
-			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
+		file_list = []
+		label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
+		probabilities = self.convert_probabilities_to_dict(np.array(list(probabilities.values()))) # sometimes the probabilities are 0
+		sizes = self.calculate_estimated_size(filename, self.class_table_dict)
+		times = self.calculate_times(filename, self.class_table_dict)
 
-			return file_cost
+		for key in self.class_table_dict:
+			file_list.append(file_extractor_estimated_cost(filename, key, probabilities[key], sizes[key], times[key]))
+
+		return file_list
+
+	def convert_probabilities_to_dict(self, probabilities):
+		probabilities_dict = dict()
+		for idx, key in enumerate(self.class_table_dict):
+			probabilities_dict[key] = probabilities[idx]
+		return probabilities_dict 	
 
 	def calculate_times(self, filename, class_table):
 		'''
@@ -218,23 +272,22 @@ class Scheduler:
 			filesize = os.path.getsize(filename)
 
 		filesize = np.array([filesize]).reshape(1, -1)
-		times = np.zeros(len(class_table.keys()))
-		for idx, key in enumerate(class_table.keys()):
+		times = dict()
+		for key in class_table.keys():
 			if key == "unknown":
-				times[idx] = 0.5
+				times[key] = 0.5
 			elif key == "keyword":
-				times[idx] = np.exp(self.time_models[key].predict(np.log(filesize)))
+				times[key] = np.exp(self.time_models[key].predict(np.log(filesize)))
 			elif key == "netcdf":
-				times[idx] = self.time_models[key].predict(np.log(filesize))
+				times[key] = self.time_models[key].predict(np.log(filesize))
 			elif key == "json/xml":
-				key = "jsonxml"
-				times[idx] = self.time_models[key].predict(filesize)
+				times[key] = self.time_models["jsonxml"].predict(filesize)
 			else:
-				times[idx] = self.time_models[key].predict(filesize)
+				times[key] = self.time_models[key].predict(filesize)
 
-		for i in range(len(times)):
-			if times[i] <= 0:
-				times[i] = np.finfo(float).eps
+		for key, value in times.items():
+			if value <= 0:
+				value = np.finfo(float).eps
 
 		return times
 
@@ -272,18 +325,18 @@ class Scheduler:
 			filesize = os.path.getsize(filename)
 
 		filesize = np.array([filesize]).reshape(1, -1)
-		sizes = np.zeros(len(class_table.keys()))
-		for idx, key in enumerate(class_table.keys()):
+		sizes = dict()
+		for key in class_table.keys():
 			if key == "unknown" or key == "netcdf":
-				sizes[idx] = self.size_models[key]
+				sizes[key] = self.size_models[key]
 			elif key == "json/xml":
-				key = "jsonxml" 
-				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
+				sizes[key] = np.exp(self.size_models["jsonxml"].predict(np.log(filesize)))
 			else:
-				sizes[idx] = np.exp(self.size_models[key].predict(np.log(filesize)))
-		for i in range(len(sizes)):
-			if sizes[i] <= 0:
-				sizes[i] = np.finfo(float).eps
+				sizes[key] = np.exp(self.size_models[key].predict(np.log(filesize)))
+		
+		for key, value in sizes.items():
+			if value <= 0:
+				value = np.finfo(float).eps
 
 		return sizes
 	
@@ -300,14 +353,14 @@ def run_experiments(extraction_threshold_input):
 
 		start_time = time.time()
 
-		times = scheduler.run("../../CDIACPub8")
+		times = scheduler.run()
 		print("--- %s seconds ---" % (time.time() - start_time))
 
 
 if __name__ == "__main__":
+	# Threshold of .0005 is for 10 files
 
-
-	thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+	thresholds = [0.0005]
 
 	for threshold in thresholds:
 		print("Running Experiment on Threshold value of:", threshold)
