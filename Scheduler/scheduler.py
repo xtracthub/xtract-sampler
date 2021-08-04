@@ -177,13 +177,11 @@ class Scheduler:
 		print(type(self.dequeue_list))
 		print("Dequeue List", self.dequeue_list)
 
-		while not self.dequeue_list.empty():
-			print(self.dequeue_list.get())
+
+		with open('Experiment3/dequeue_list_threshold_{th}.json'.format(th=self.extraction_threshold), 'w+') as output:
+			while not self.dequeue_list.empty():
+				output.write(str(self.dequeue_list.get()) + '\n')
 		
-		#dequeue_dict = dict(self.dequeue_list)
-
-		#dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
-
 		#with open("Experiment2/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
 		#	json.dump(dequeue_dict, fp, indent=4)
 
