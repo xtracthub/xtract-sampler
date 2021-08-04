@@ -26,9 +26,9 @@ class file_estimated_cost:
 		self.probabilities = probabilities
 		self.sizes = sizes
 		self.times = times
-		self.costs = -1 * np.log(np.multiply(self.sizes, 
-							np.multiply(self.probabilities, self.times)) 
-							+ np.finfo(float).eps)
+		#self.costs = -1 * self.probabilities
+		self.costs = self.calculate_cost()
+
 	def best_extractor(self):
 		return np.amax(-1 * self.costs)
 	def best_extractor_index(self):
@@ -45,6 +45,11 @@ class file_estimated_cost:
 		return "File path: " + self.file_name + " Cost: " + str(self.best_extractor())
 	def __lt__(self, other):
 		return self.best_extractor() > other.best_extractor()
+	def calculate_cost(self):
+		sizes_probabilities = np.multiply(self.sizes, self.probabilities) + 1 # smoothing
+		cost_raw = np.multiply(sizes_probabilities, self.times) + np.finfo(float).eps # so we get nonzero cost
+		return -1 * np.log(cost_raw)
+
 
 class ProxyFileEstimatedCost(file_estimated_cost):
 	def get_attribute(self, name):
@@ -71,21 +76,21 @@ class Scheduler:
 			print("The percentage to extract must be between 0 and 1")
 			exit()
 
-		self.file_count_threshold = len(self.file_crawl_map.index) * extraction_threshold
+		self.extraction_threshold = extraction_threshold
+		self.file_count_threshold = int(len(self.file_crawl_map.index) * extraction_threshold)
 
 		self.manager = self.get_manager()
 		self.crawl_queue = self.manager.PriorityQueue()
 		self.xtract_queue = self.manager.PriorityQueue()
 		self.dequeue_list = self.manager.dict()
 		self.file_index = mp.Value('i', 0)
+		self.zero_extraction = mp.Value('i', 0)
 
 	def simulate_crawl(self):
-		for i in range(len(self.file_crawl_map.index)):
+		for i in range(self.file_count_threshold):
 			self.crawl_queue.put((self.file_crawl_map["crawl_timestamp"][i], self.file_crawl_map["petrel_path"][i]))
 			if i == 0:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
-			elif i == self.file_count_threshold:
-				break
 			else:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i] - self.file_crawl_map["crawl_timestamp"][i - 1]
 			time.sleep(elapsed_time)
@@ -130,21 +135,26 @@ class Scheduler:
 	
 		print("--- %s seconds ---" % (time.time() - start_time))
 
+		print("Zero Extraction Times", self.zero_extraction.value)
+
 		print("Length of dict:", len(self.dequeue_list))
 
 		dequeue_dict = dict(self.dequeue_list)
 
 		dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
 
-		with open("dequeue_list.json", "w+") as fp:
+		with open("Experiments/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
 			json.dump(dequeue_dict, fp, indent=4)
 
 	def enqueue(self, lock):
 		while not self.crawl_queue.empty():
 			#print("Enqueue file tuple lock")
 			#lock.acquire()
-			#try:
-			file_tuple = self.crawl_queue.get(timeout=120)
+			try:
+				file_tuple = self.crawl_queue.get(timeout=120)
+			except Empty:
+				print("Nothing in crawl queue")
+				pass
 			#finally:
 			#	print("Enqueue file tuple lock released")
 			#	lock.release()
@@ -181,16 +191,18 @@ class Scheduler:
 				extraction_time = self.extraction_times.loc[file_cost.get_filename()][best_index]
 				time.sleep(extraction_time)
 				file_index.value += 1
+				if extraction_time == 0:
+					self.zero_extraction.value += 1
 				self.dequeue_list[file_cost.get_filename()] = best_index
 				#self.dequeue_list[self.manager.Value(c_char_p, file_cost.get_filename())] = self.manager.Value('i', best_index)
-				print("Dequeue:", file_index.value, "Extraction time:", extraction_time)
+				#print("Dequeue:", file_index.value, "Extraction time:", extraction_time)
 
 
 	def calculate_costs(self, filename):
 			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
 			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
-			times = 1/self.calculate_times(filename, self.class_table_dict) 
+			times = 1/(self.calculate_times(filename, self.class_table_dict) + 1) 
 			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
 
 			return file_cost
@@ -235,7 +247,7 @@ class Scheduler:
 					pipeline = pkl.load(fp)
 					type = file.split("-")[0]
 					models[type.lower()] = pipeline
-		models["unknown"] = 10
+		models["unknown"] = 100
 		return models
 
 	def get_size_models(self, size_model_directory):
@@ -279,20 +291,28 @@ class Scheduler:
 		return self.crawl_queue
 
 
+def run_experiments(extraction_threshold_input):
+		scheduler = Scheduler(
+		os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
+		os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
+		os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
+		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", extraction_threshold=extraction_threshold_input, test=False)
+
+		start_time = time.time()
+
+		times = scheduler.run("../../CDIACPub8")
+		print("--- %s seconds ---" % (time.time() - start_time))
+
+
 if __name__ == "__main__":
-	scheduler = Scheduler(
-	 os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
-	 os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
-	 os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
-	 "filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", False)
-
-	start_time = time.time()
 
 
-	times = scheduler.run("../../CDIACPub8")
-	print("--- %s seconds ---" % (time.time() - start_time))
+	thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
-
+	for threshold in thresholds:
+		print("Running Experiment on Threshold value of:", threshold)
+		run_experiments(threshold)
+		print("Done with Experiment of Threshold value of:", threshold)
 	#print(times.head())
 
 
