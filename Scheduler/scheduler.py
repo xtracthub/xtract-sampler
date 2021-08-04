@@ -46,7 +46,7 @@ class file_estimated_cost:
 	def __lt__(self, other):
 		return self.best_extractor() > other.best_extractor()
 	def calculate_cost(self):
-		sizes_probabilities = np.multiply(self.sizes, self.probabilities) + 1 # smoothing
+		sizes_probabilities = np.multiply(self.sizes, self.probabilities) # smoothing
 		cost_raw = np.multiply(sizes_probabilities, self.times) + np.finfo(float).eps # so we get nonzero cost
 		return -1 * np.log(cost_raw)
 
@@ -143,7 +143,7 @@ class Scheduler:
 
 		dequeue_dict = {str(k):int(v) for k,v in dequeue_dict.items()}
 
-		with open("Experiments/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
+		with open("Experiment2/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
 			json.dump(dequeue_dict, fp, indent=4)
 
 	def enqueue(self, lock):
@@ -202,7 +202,7 @@ class Scheduler:
 			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
 			probabilities = np.array(list(probabilities.values())) # sometimes the probabilities are 0
 			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
-			times = 1/(self.calculate_times(filename, self.class_table_dict) + 1) 
+			times = 1/(self.calculate_times(filename, self.class_table_dict)) 
 			file_cost = file_estimated_cost(filename, probabilities, sizes, times)
 
 			return file_cost
