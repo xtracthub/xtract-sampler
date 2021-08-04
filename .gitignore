@@ -61,3 +61,5 @@ Scheduler/EstimateSize/models
 .history/
 Scheduler/queue.pkl
 Scheduler/times.csv
+Scheduler/Experiments
+Scheduler/Queues
