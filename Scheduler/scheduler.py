@@ -91,7 +91,7 @@ class ProxyFileEstimatedCost(file_estimated_cost):
 '''
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times,extraction_threshold=1, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, thresholds, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
@@ -106,12 +106,7 @@ class Scheduler:
 		self.test = test
 		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
 
-		if extraction_threshold > 1 or extraction_threshold < 0:
-			print("The percentage to extract must be between 0 and 1")
-			exit()
-
-		self.extraction_threshold = extraction_threshold
-		self.file_count_threshold = int(len(self.file_crawl_map.index) * extraction_threshold)
+		self.file_count_threshold = (len(self.file_crawl_map.index) * thresholds * 5).astype(int)
 
 		self.manager = self.get_manager()
 		self.crawl_queue = self.manager.PriorityQueue()
@@ -120,8 +115,10 @@ class Scheduler:
 		self.file_index = mp.Value('i', 0)
 		self.zero_extraction = mp.Value('i', 0)
 
+		self.start_time = None
+
 	def simulate_crawl(self):
-		for i in range(self.file_count_threshold):
+		for i in range(len(self.file_crawl_map.index)):
 			self.crawl_queue.put((self.file_crawl_map["crawl_timestamp"][i], self.file_crawl_map["petrel_path"][i]))
 			if i == 0:
 				elapsed_time = self.file_crawl_map["crawl_timestamp"][i]
@@ -141,7 +138,7 @@ class Scheduler:
 		return m
 
 	def run(self):
-		start_time = time.time()
+	
 		lock = mp.Lock()
 
 		if mp.cpu_count() % 2 != 0:
@@ -155,6 +152,9 @@ class Scheduler:
 		print("Extraction threshold: ", self.file_count_threshold)
 
 		self.simulate_crawl()
+
+		self.start_time = time.time()
+
 		for p in enqueue_processes:
 			p.start()
 		
@@ -167,7 +167,7 @@ class Scheduler:
 		for p in enqueue_processes:
 			p.join()
 
-		scheduler_run_time = time.time() - start_time
+		scheduler_run_time = time.time() - self.start_time
 		print("--- %s seconds ---" % (scheduler_run_time))
 		print("Zero Extraction Times", self.zero_extraction.value)
 		print("Length of dict:", self.dequeue_list.qsize())
@@ -176,7 +176,7 @@ class Scheduler:
 		while not self.dequeue_list.empty():
 				dequeue_list.append(self.dequeue_list.get())
 
-		with open('Experiment3/dequeue_list_threshold_{th}.pkl'.format(th=self.extraction_threshold), 'wb+') as output:
+		with open('Experiment4/dequeue_list.pkl', 'wb+') as output:
 				pkl.dump(dequeue_list, output)
 		
 		return scheduler_run_time 
@@ -232,6 +232,10 @@ class Scheduler:
 				extraction_time = self.extraction_times.loc[file_cost.get_filename()][extractor_idx]
 				time.sleep(extraction_time)
 				file_index.value += 1
+
+				if file_index.value in self.file_count_threshold:
+					print("----- Dequeue: {f} files Time: {t} -----".format(f=file_index.value, t=time.time() - self.start_time))
+
 				if extraction_time == 0:
 					self.zero_extraction.value += 1
 				self.dequeue_list.put((file_cost.get_filename(), file_cost.get_extractor(), file_cost.get_cost()))
@@ -340,12 +344,12 @@ class Scheduler:
 		return self.crawl_queue
 
 
-def run_experiments(extraction_threshold_input):
+def run_experiments(input_thresholds):
 		scheduler = Scheduler(
 		os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
 		os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
 		os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
-		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", extraction_threshold=extraction_threshold_input, test=False)
+		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", thresholds=input_thresholds, test=False)
 		times = scheduler.run()
 		return times
 
@@ -354,18 +358,15 @@ if __name__ == "__main__":
 	# Threshold of .0005 is for 10 files
 
 	#thresholds = [.0005]
-	thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-	time_output = open('Experiment3/Times.txt', 'w+') 
+	thresholds = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
+	#time_output = open('Experiment3/Times.txt', 'w+') 
+		
+	print("-----------------------------------------------------")
+	run_time = run_experiments(thresholds)
+	#time_output.write('Total Time in seconds: ' + str(run_time) + '\n')
+	print("-----------------------------------------------------")
 
-	for threshold in thresholds:
-		print("-----------------------------------------------------")
-		print("Running Experiment on Threshold value of:", threshold)
-		run_time = run_experiments(threshold)
-		time_output.write('Threshold: ' + str(threshold) + '  Time in seconds: ' + str(run_time) + '\n')
-		print("Done with Experiment of Threshold value of:", threshold)
-		print("-----------------------------------------------------")
-
-	time_output.close()
+	#time_output.close()
 	
 	#print(times.head())
 

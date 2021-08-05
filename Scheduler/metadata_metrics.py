@@ -255,11 +255,9 @@ def tfidf_score(filepath):
     with open (filepath, 'r') as f:
         data = json.load(f)
         vals = flatten_values(data)
-        for val in vals:
-            if isinstance(val, str):
-                print(val)
-                text = text + ' ' + val
-    
+        newlist = [val for val in vals if isinstance(val, str)]
+        text = " ".join(newlist)
+   
     vectorizer = TfidfVectorizer()
     '''
     #try:
@@ -292,5 +290,5 @@ def tfidf_score(filepath):
     except ValueError:
         return 0
 
-score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
-print(score)
+#score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
+#print(score)
