@@ -167,21 +167,19 @@ class Scheduler:
 		for p in enqueue_processes:
 			p.join()
 
-	
-		print("--- %s seconds ---" % (time.time() - start_time))
-
+		scheduler_run_time = time.time() - start_time
+		print("--- %s seconds ---" % (scheduler_run_time))
 		print("Zero Extraction Times", self.zero_extraction.value)
-
 		print("Length of dict:", self.dequeue_list.qsize())
 
-		print(type(self.dequeue_list))
-		print("Dequeue List", self.dequeue_list)
+		dequeue_list = []
+		while not self.dequeue_list.empty():
+				dequeue_list.append(self.dequeue_list.get())
 
-
-		with open('Experiment3/dequeue_list_threshold_{th}.json'.format(th=self.extraction_threshold), 'w+') as output:
-			while not self.dequeue_list.empty():
-				output.write(str(self.dequeue_list.get()) + '\n')
+		with open('Experiment3/dequeue_list_threshold_{th}.pkl'.format(th=self.extraction_threshold), 'wb+') as output:
+				pkl.dump(dequeue_list, output)
 		
+		return scheduler_run_time 
 		#with open("Experiment2/dequeue_list_threshold_{th}.json".format(th=self.extraction_threshold), "w+") as fp:
 		#	json.dump(dequeue_dict, fp, indent=4)
 
@@ -192,7 +190,7 @@ class Scheduler:
 			try:
 				file_tuple = self.crawl_queue.get(timeout=120)
 			except Empty:
-				print("Nothing in crawl queue")
+				#print("Nothing in crawl queue")
 				pass
 			#finally:
 			#	print("Enqueue file tuple lock released")
@@ -216,13 +214,13 @@ class Scheduler:
 			try:
 				file_cost = self.xtract_queue.get(timeout=120)
 			except IndexError:
-				print("Nothing in xtract queue")
+				#print("Nothing in xtract queue")
 				pass	
 			except TypeError:
 				print(type(self.xtract_queue))
 				exit()
 			except Empty:
-				print("Took too long to get from queue")
+				#print("Took too long to get from queue")
 				pass
 			#finally:
 				#lock.release()
@@ -236,7 +234,7 @@ class Scheduler:
 				file_index.value += 1
 				if extraction_time == 0:
 					self.zero_extraction.value += 1
-				self.dequeue_list.put((file_cost.get_filename(), extractor_idx, file_cost.get_cost()))
+				self.dequeue_list.put((file_cost.get_filename(), file_cost.get_extractor(), file_cost.get_cost()))
 				#self.dequeue_list[self.manager.Value(c_char_p, file_cost.get_filename())] = self.manager.Value('i', best_index)
 				#print("Dequeue:", file_index.value, "Extraction time:", extraction_time)
 
@@ -348,22 +346,27 @@ def run_experiments(extraction_threshold_input):
 		os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
 		os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
 		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", extraction_threshold=extraction_threshold_input, test=False)
-
-		start_time = time.time()
-
 		times = scheduler.run()
-		print("--- %s seconds ---" % (time.time() - start_time))
+		return times
 
 
 if __name__ == "__main__":
 	# Threshold of .0005 is for 10 files
 
-	thresholds = [0.0005]
+	#thresholds = [.0005]
+	thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+	time_output = open('Experiment3/Times.txt', 'w+') 
 
 	for threshold in thresholds:
+		print("-----------------------------------------------------")
 		print("Running Experiment on Threshold value of:", threshold)
-		run_experiments(threshold)
+		run_time = run_experiments(threshold)
+		time_output.write('Threshold: ' + str(threshold) + '  Time in seconds: ' + str(run_time) + '\n')
 		print("Done with Experiment of Threshold value of:", threshold)
+		print("-----------------------------------------------------")
+
+	time_output.close()
+	
 	#print(times.head())
 
 

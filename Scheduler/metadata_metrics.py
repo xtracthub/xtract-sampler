@@ -257,6 +257,7 @@ def tfidf_score(filepath):
         vals = flatten_values(data)
         for val in vals:
             if isinstance(val, str):
+                print(val)
                 text = text + ' ' + val
     
     vectorizer = TfidfVectorizer()
@@ -291,5 +292,5 @@ def tfidf_score(filepath):
     except ValueError:
         return 0
 
-#score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACJSONXMLExtracted/09AR20151209_OME_PI.xmlJSONXMLXtract8998.json')
-#print(score)
+score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
+print(score)
