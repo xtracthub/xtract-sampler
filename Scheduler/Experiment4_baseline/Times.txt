@@ -1,0 +1,13 @@
+Extraction threshold:  [ 10184  20369  30553  40738  50922  61107  71291  81476  91660 101845]
+----- Dequeue: 10184 files Time: 104.9390516281128 -----
+----- Dequeue: 20369 files Time: 197.96394991874695 -----
+----- Dequeue: 30553 files Time: 279.49214792251587 -----
+----- Dequeue: 40738 files Time: 351.56674790382385 -----
+----- Dequeue: 50922 files Time: 432.8005666732788 -----
+----- Dequeue: 61107 files Time: 534.7720866203308 -----
+----- Dequeue: 71291 files Time: 629.7789657115936 -----
+----- Dequeue: 81476 files Time: 745.2117292881012 -----
+----- Dequeue: 91660 files Time: 825.3930695056915 -----
+--- 937.9253308773041 seconds ---
+Zero Extraction Times 73238
+Length of dict: 101855

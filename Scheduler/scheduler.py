@@ -22,6 +22,24 @@ class CustomManager(SyncManager):
 	pass
 
 
+class file_costless:
+	def __init__(self, file_name, extractor):
+		self.file_name = file_name
+		self.extractor = extractor
+		self.cost = 0
+	def get_cost(self):
+		return self.cost
+	def get_filename(self):
+		return self.file_name
+	def get_extractor(self):
+		return self.extractor
+	def __lt__(self, other):
+		return self.cost < other.cost
+	def __repr__(self):
+		return "File path: " + self.file_name + "Extractor: " + self.extractor + " Cost: " + str(self.cost)
+
+
+
 class file_extractor_estimated_cost:
 	def __init__(self, file_name, extractor, probability, size, time):
 		self.file_name = file_name
@@ -46,10 +64,12 @@ class file_extractor_estimated_cost:
 		return "File path: " + self.file_name + "Extractor: " + self.extractor + " Cost: " + str(self.cost)
 	def __lt__(self, other):
 		return self.cost > other.cost
+	
 	def calculate_cost(self):
 		sizes_probability = self.size * self.probability + 1  # smoothing
 		cost_raw = sizes_probability / (self.time + np.finfo(float).eps + 1) # so we don't get divide by zero cost
 		return -1 * log(cost_raw)
+	
 
 '''
 	DO NOT USE 
@@ -91,7 +111,7 @@ class ProxyFileEstimatedCost(file_estimated_cost):
 '''
 
 class Scheduler:
-	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, thresholds, test=False):
+	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, thresholds, benchmark=False, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
 		self.class_table = class_table_path
@@ -116,6 +136,7 @@ class Scheduler:
 		self.zero_extraction = mp.Value('i', 0)
 
 		self.start_time = None
+		self.is_benchmarking = benchmark
 
 	def simulate_crawl(self):
 		for i in range(len(self.file_crawl_map.index)):
@@ -144,7 +165,6 @@ class Scheduler:
 		if mp.cpu_count() % 2 != 0:
 			print("This program only works on even-cored processors")
 			exit()
-
 		
 		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
 		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(mp.cpu_count() / 2))]
@@ -176,7 +196,7 @@ class Scheduler:
 		while not self.dequeue_list.empty():
 				dequeue_list.append(self.dequeue_list.get())
 
-		with open('Experiment4/dequeue_list.pkl', 'wb+') as output:
+		with open('Experiment4_baseline/baseline_list.pkl', 'wb+') as output:
 				pkl.dump(dequeue_list, output)
 		
 		return scheduler_run_time 
@@ -245,13 +265,18 @@ class Scheduler:
 
 	def calculate_costs(self, filename):
 		file_list = []
-		label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
-		probabilities = self.convert_probabilities_to_dict(np.array(list(probabilities.values()))) # sometimes the probabilities are 0
-		sizes = self.calculate_estimated_size(filename, self.class_table_dict)
-		times = self.calculate_times(filename, self.class_table_dict)
 
-		for key in self.class_table_dict:
-			file_list.append(file_extractor_estimated_cost(filename, key, probabilities[key], sizes[key], times[key]))
+		if self.is_benchmarking:
+			for key in self.class_table_dict:
+				file_list.append(file_costless(filename, key))
+		else:
+			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
+			probabilities = self.convert_probabilities_to_dict(np.array(list(probabilities.values()))) # sometimes the probabilities are 0
+			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
+			times = self.calculate_times(filename, self.class_table_dict)
+
+			for key in self.class_table_dict:
+				file_list.append(file_extractor_estimated_cost(filename, key, probabilities[key], sizes[key], times[key]))
 
 		return file_list
 
@@ -349,7 +374,7 @@ def run_experiments(input_thresholds):
 		os.path.abspath("../stored_models/class_tables/rf/CLASS_TABLE-rf-head-2021-07-22-16:47:16.json"),
 		os.path.abspath("../stored_models/trained_classifiers/rf/rf-head-2021-07-22-16:47:16.pkl"),
 		os.path.abspath("EstimateTime/models"), os.path.abspath("EstimateSize/models"),
-		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", thresholds=input_thresholds, test=False)
+		"filename_crawl_t_map_processed.csv", "AggregateExtractionTimes/ExtractionTimes.csv", thresholds=input_thresholds, benchmark=True, test=False)
 		times = scheduler.run()
 		return times
 
