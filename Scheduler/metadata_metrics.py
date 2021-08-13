@@ -1,6 +1,7 @@
 import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
+import os
 
 def readability_score(filepath):
     def flatten_values(data):
@@ -290,5 +291,21 @@ def tfidf_score(filepath):
     except ValueError:
         return 0
 
-#score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
-#print(score)
+
+def tfidf_scores_directory(filenames):
+    corpus = []
+    for filename in filenames:
+            with open(filename, 'r') as f:
+                corpus.append(f)
+
+    vectorizer = TfidfVectorizer(analyzer='word', stop_words='english')
+    tfidf_wm = vectorizer.fit_transform(corpus)
+    feature_names = vectorizer.get_feature_names()
+    df = pd.DataFrame(data=tfidf_wm.toarray(), index=filenames, columns=feature_names)
+    return df
+
+
+
+
+score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
+print(score)
