@@ -307,5 +307,5 @@ def tfidf_scores_directory(filenames):
 
 
 
-score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
-print(score)
+#score = tfidf_score('/home/cc/CDIACMetadataExtract/CDIACTabularExtracted/PACIFICA1205.csvTabXtract50.json')
+#print(score)
