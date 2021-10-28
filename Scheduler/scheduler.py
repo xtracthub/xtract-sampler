@@ -22,6 +22,27 @@ class CustomManager(SyncManager):
 	pass
 
 
+
+"""
+A class used to represent the naive implementation 
+
+Its a file extractor pair but cost is not calculated using File Type Identification
+
+'''
+
+Attributes
+
+----------
+
+file_name: str
+	the file's name (specifically the files path because each path is unique)
+extractor: str
+	the file extractor associated to the file
+cost: int
+	cost of the file. since this is costless we set it to 0
+	TODO: should be removed to readability
+
+"""
 class file_costless:
 	def __init__(self, file_name, extractor):
 		self.file_name = file_name
@@ -38,7 +59,35 @@ class file_costless:
 	def __repr__(self):
 		return "File path: " + self.file_name + "Extractor: " + self.extractor + " Cost: " + str(self.cost)
 
+"""
+A class used to represent the SCHEDULER'S implementation
 
+Its a file extractor pair and cost is calculated using predictive modeling
+
+'''
+
+Attributes
+
+----------
+
+file_name: str
+	the file's name (specifically the files path because each path is unique)
+extractor: str
+	the file extractor associated to the file
+cost: int
+	cost of the file. since this is costless we set it to 0
+probability: float
+	probability from classifier the file is of the extractor's type
+sizes: float
+	predicted metadata extracted size
+times: float
+	predicted metadata extraction time
+cost: float
+	combines the values from the probability, sizes, and times
+
+TODO: remove unneccesary variables
+
+"""
 
 class file_extractor_estimated_cost:
 	def __init__(self, file_name, extractor, probability, size, time):
@@ -111,6 +160,21 @@ class ProxyFileEstimatedCost(file_estimated_cost):
 '''
 
 class Scheduler:
+
+	'''
+
+	We initialize the scheduler by giving it a trained model with the associated labels it was trained with. Next we load in the size and time regression models 
+
+
+	Because this was simulated then file crawl map represents how the files are crawled by Xtract's crawler which are fed into this scheduler
+
+	Also because this was simulated we know the actual extraction times before hand
+
+	thresholds represents the percentages at which we should record our data for results purposes
+
+
+	'''
+
 	def __init__(self, class_table_path, sampler_model_file_path, time_model_directory, size_model_directory, file_crawl_map_path, actual_extraction_times, thresholds, benchmark=False, test=False):
 		with open(sampler_model_file_path, "rb") as fp1:
 			self.model = pickle.load(fp1)
@@ -127,6 +191,10 @@ class Scheduler:
 		self.file_crawl_map = pd.read_csv(file_crawl_map_path)
 
 		self.file_count_threshold = (len(self.file_crawl_map.index) * thresholds * 5).astype(int)
+		
+		# this is merely for recording purposes 
+		# we made the assumption of multiplying by 5 because thats what was used for CDIAC
+		# represents how many file extractor pairs we have gone through 
 
 		self.manager = self.get_manager()
 		self.crawl_queue = self.manager.PriorityQueue()
@@ -135,9 +203,16 @@ class Scheduler:
 		self.file_index = mp.Value('i', 0)
 		self.zero_extraction = mp.Value('i', 0)
 
+		#scheduler exploits multicore systems by using a multiprocessing PriorityQueue()
+		# several different extractors can be enqueue/dequeued concurrently 
 		self.start_time = None
 		self.is_benchmarking = benchmark
 
+	'''
+	Simulates file crawl by sleeping for the actual time that it took to crawl
+
+	--> Only useful metric we need from file crawling 
+	'''
 	def simulate_crawl(self):
 		for i in range(len(self.file_crawl_map.index)):
 			self.crawl_queue.put((self.file_crawl_map["crawl_timestamp"][i], self.file_crawl_map["petrel_path"][i]))
@@ -148,6 +223,10 @@ class Scheduler:
 			time.sleep(elapsed_time)
 
 
+
+	'''
+	Scheduler's manager determines how multiprocessing tasks are conducted
+	'''	
 	def get_manager(self):
 		PriorityQueueProxy = MakeProxyType("PriorityQueue", public_methods(PriorityQueue))
 		#FileEstimatedCostProxy = MakeProxyType("file_estimated_cost", public_methods(file_estimated_cost))
@@ -158,9 +237,11 @@ class Scheduler:
 		m.start()
 		return m
 
+	'''
+	Runs through the creating and dequueing from the scheduler's queue
+	'''
 	def run(self):
-	
-		lock = mp.Lock()
+		lock = mp.Lock() # singular lock to prevent data races 
 
 		if mp.cpu_count() % 2 != 0:
 			print("This program only works on even-cored processors")
