@@ -246,7 +246,9 @@ class Scheduler:
 		if mp.cpu_count() % 2 != 0:
 			print("This program only works on even-cored processors")
 			exit()
-		
+			# :)
+
+		# split half the cores for enqueueing and the other for dequeueing and extracting		
 		enqueue_processes=[mp.Process(target=self.enqueue, args=(lock,)) for x in range(0, int(mp.cpu_count() / 2))]
 		dequeue_processes=[mp.Process(target=self.dequeue, args=(lock, self.file_index)) for x in range(0, int(mp.cpu_count() / 2))]
 
@@ -256,6 +258,7 @@ class Scheduler:
 
 		self.start_time = time.time()
 
+		#run enqueue and dequeue concurrently
 		for p in enqueue_processes:
 			p.start()
 		
@@ -273,6 +276,9 @@ class Scheduler:
 		print("Zero Extraction Times", self.zero_extraction.value)
 		print("Length of dict:", self.dequeue_list.qsize())
 
+
+		# converts the simulated extraction to a dequeue list 
+		# saves the file to a list so we can analyze it thoroughly later
 		dequeue_list = []
 		while not self.dequeue_list.empty():
 				dequeue_list.append(self.dequeue_list.get())
@@ -289,6 +295,7 @@ class Scheduler:
 			#print("Enqueue file tuple lock")
 			#lock.acquire()
 			try:
+				#waits two minutes to find another file in the queue before it stops trying
 				file_tuple = self.crawl_queue.get(timeout=120)
 			except Empty:
 				#print("Nothing in crawl queue")
@@ -302,6 +309,9 @@ class Scheduler:
 			#lock.acquire()
 			#try:
 			for file_cost in file_costs:
+				# creates file extractor pairs for a singular file 
+				# in the case of cdiac there were 5 pairs
+
 				self.xtract_queue.put(file_cost)
 			#finally:
 			#	print("Enqueue push onto the heap lock released")
@@ -351,6 +361,9 @@ class Scheduler:
 			for key in self.class_table_dict:
 				file_list.append(file_costless(filename, key))
 		else:
+			# uses the benefit function and analyzes file with very extractor to calculate that function 
+			# returns file to each extractor list of pairs
+
 			label, probabilities, _, extract_time, predict_time = predict.predict_single_file(filename, self.model, self.class_table, "head")
 			probabilities = self.convert_probabilities_to_dict(np.array(list(probabilities.values()))) # sometimes the probabilities are 0
 			sizes = self.calculate_estimated_size(filename, self.class_table_dict)
@@ -373,7 +386,7 @@ class Scheduler:
 		'''
 
 		if os.path.getsize(filename) <= 0:
-			filesize = 2
+			filesize = 2 #if the file is empty we initialize it to essentially and empty dict: {} meaning failed extraction
 		else:
 			filesize = os.path.getsize(filename)
 
@@ -397,6 +410,9 @@ class Scheduler:
 
 		return times
 
+	'''
+	Loads saved regression models for time from a file path
+	'''
 	def get_time_models(self, time_model_directory):
 		models = dict()
 		for subdir, dirs, files in os.walk(time_model_directory):
@@ -406,9 +422,11 @@ class Scheduler:
 					pipeline = pkl.load(fp)
 					type = file.split("-")[0]
 					models[type.lower()] = pipeline
-		models["unknown"] = 100
+		models["unknown"] = 100 # constant value arbitrarly defined 
 		return models
-
+	'''
+	Loads saved regression models for size from a file path
+	'''
 	def get_size_models(self, size_model_directory):
 		models = dict()
 		for subdir, dirs, files, in os.walk(size_model_directory):
@@ -418,8 +436,8 @@ class Scheduler:
 					pipeline = pkl.load(fp)
 					type = file.split("-")[0]
 					models[type.lower()] = pipeline
-		models["unknown"] = 0
-		models["netcdf"] = 5506.276923076923
+		models["unknown"] = 0 # also arbitrary sentinel value
+		models["netcdf"] = 5506.276923076923 # since the regression was poor we just took the average 
 
 		return models
 
