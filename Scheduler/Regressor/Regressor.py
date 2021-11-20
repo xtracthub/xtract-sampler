@@ -11,6 +11,9 @@ from sklearn.svm import SVR
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import KFold
 
+from scipy.stats import pearsonr
+
+
 '''
 extractor_file: a path to an extractor file with the list of extractors to be analyzed/trained on (simple text with strings
 representing extractors)
@@ -62,7 +65,14 @@ def generateRegressors(data_file, extractor_file):
 				X = data_df['file_size']
 				Y = data_df[metric]
 
+				r, p_value = pearsonr(X, Y)
 
+				if p_value < .05 and r > 0.25:
+					# correlated
+
+				canova_value = canova(X, Y)
+
+				if p
 				
 
 				'''
