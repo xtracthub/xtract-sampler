@@ -1,3 +1,5 @@
 file_path,extraction_time,extraction_size
-fileX, 1, 345
-fileY, 2, 432
+toyData/corr_map.csv, 1, 345
+toyData/eraser2.jpg, 2, 432
+toyData/I9.pdf, 3, 563
+toyData/calibrum.jpg, 4, 421
