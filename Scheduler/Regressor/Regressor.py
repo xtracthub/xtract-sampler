@@ -87,21 +87,24 @@ def generateRegressors(data_file, extractor_file):
 						kfold = KFold(n_splits = 2, shuffle=True) # Split into ten folds and hope the bias isn't too high (there aren't TOO many files)
 						r2_score = np.mean(cross_val_score(model, X, Y, cv=kfold, scoring='r2'))
 						neg_mean_squared_error = np.mean(cross_val_score(model, X, Y, cv=kfold, scoring='neg_mean_squared_error'))
-						linear_scores[name] = abs(neg_mean_squared_error) / r2_score  		
+						
+						if r2_score >= 0:
+							linear_scores[name] = abs(neg_mean_squared_error) / r2_score  		
+							print("r2_score: ", r2_score)
 				if canova_value >= 0.4:
 					for name, model in nonlinear_pipelines.items():
 						kfold = KFold(n_splits = 2, shuffle=True) # Split into ten folds and hope the bias isn't too high (there aren't TOO many files)
 						r2_score = np.mean(cross_val_score(model, X, Y, cv=kfold, scoring='r2'))
 						neg_mean_squared_error = np.mean(cross_val_score(model, X, Y, cv=kfold, scoring='neg_mean_squared_error'))
-						nonlinear_scores[name] = abs(neg_mean_squared_error) / r2_score
-				
+						if r2_score >= 0:
+							nonlinear_scores[name] = abs(neg_mean_squared_error) / r2_score
+							print("r2_score: ", r2_score)	
 				if len(linear_scores) == 0 and len(nonlinear_scores) == 0: # in cases all regressions are bad
 					model_pile[extractor][metric] = data_df[metric].mean()
 				else:
 					model_pile[extractor][metric] = pickBestModel(linear_scores, nonlinear_scores, X, Y, linear_pipelines, nonlinear_pipelines)
 
 				
-	print(model_pile)			
 	return model_pile
 
 
@@ -123,7 +126,11 @@ def pickBestModel(linear_scores, nonlinear_scores, X, Y, linear_pipelines, nonli
 	assert model != None
 	assert isLinearModel != None
 
+
+	print("Model: ", model)
+	print("Score: ", min_score)
 	if isLinearModel:
+	
 		best_model = linear_pipelines[model]
 	else:
 		best_model = nonlinear_pipelines[model]
