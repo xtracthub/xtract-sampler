@@ -99,11 +99,9 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                     iter=None, degree=None, penalty=None, solver=None, n_estimators=None,
                     criterion=None, max_depth=None, min_sample_split=None):
 
-    # model_name = f"models/trained_classifiers/{classifier_name}-{features}-{current_time}.pkl"
     if mode == 'predict' and trained_classifier is not None:
         class_table_name = f"stored_models/class_tables/CLASS_TABLE-{(trained_classifier.split('/')[-1]).split('.')[0]}.json"
         print(f"Class Table name: {class_table_name}")
-    # exit()
 
     if mode == 'predict' and predict_file is not None:
         try:
@@ -116,9 +114,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
             return
-        # with open(results_file, 'w') as prediction_file:
-        #     json.dump(predict_single_file(dirname, trained_classifier, feature, head_bytes=head_bytes,
-        #                                   rand_bytes=rand_bytes), prediction_file)
+                                        rand_bytes=rand_bytes), prediction_file)
         t0 = time.time()
         prediction = predict_single_file(predict_file, trained_classifier, class_table_name=class_table_name,
                                          feature=feature)
@@ -136,9 +132,7 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
             return
-        # with open(results_file, 'w') as prediction_file:
-        #     json.dump(predict_directory(dirname, trained_classifier, feature, head_bytes=head_bytes,
-        #                                 rand_bytes=rand_bytes), prediction_file)
+      
         t0 = time.time()
         predictions = predict_directory(dirname, trained_classifier,class_table_name=class_table_name,feature=feature, head_bytes=head_bytes,
                                         rand_bytes=rand_bytes)
@@ -183,43 +177,6 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
                    n_estimators, criterion, max_depth, 
                    min_sample_split)
 
-    # elif mode == 'labels_features':
-    #
-    #     # write_naive_truth(csv_outfile, dirname, multiprocess=True, chunksize=1, n=1000)
-    #
-    #     if feature == "head":
-    #         features = HeadBytes(head_size=head_bytes)
-    #     elif feature == "rand":
-    #         features = RandBytes(number_bytes=rand_bytes)
-    #     elif feature == "randhead":
-    #         features = RandHead(head_size=head_bytes,
-    #                             rand_size=rand_bytes)
-    #     else:
-    #         print("Invalid feature option %s" % feature)
-    #         return
-    #     print("Running naive truth reader")
-    #     reader = NaiveTruthReader(features,  labelfile=csv_outfile)
-    #     reader.run()
-    #
-    #     print("Saving features to: {}".format(features_outfile))
-    #
-    #     try:
-    #         if os.path.getsize(features_outfile) > 0:
-    #             with open(features_outfile, 'rb') as f:
-    #                 reader_object = pkl.load(f)
-    #             with open(features_outfile, 'wb') as f:
-    #                 reader_object.data.extend(reader.data)
-    #                 pkl.dump(reader_object, f)
-    #         else:
-    #             with open(features_outfile, 'ab') as f:
-    #                 pkl.dump(reader, f)
-    #     except:
-    #         print("There was an exception!")
-    #         with open(features_outfile, 'ab') as f:
-    #             pkl.dump(reader, f)
-    #
-    #     print("Done saving features")
-    #
     else:
         print("Invalid mode")
 
@@ -283,4 +240,3 @@ if __name__ == '__main__':
                             args.trained_classifier, args.results_file, args.csv_outfile, args.features_outfile,
                             args.C, args.kernel, args.iter, args.degree, args.penalty, args.solver, args.n_estimators, 
                             args.criterion, args.max_depth, args.min_sample_split)
-
