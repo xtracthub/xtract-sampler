@@ -31,7 +31,7 @@ class ModelTrainer(object):
         data = [line for line in reader.data]
 
         # Puts the data in a different order.
-        shuffle(data)
+        data = shuffle(data)
 
         # Split the data into train and test sets (where split% of the data are for train)
         split_index = int(split * len(data))

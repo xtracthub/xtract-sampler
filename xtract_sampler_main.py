@@ -18,7 +18,6 @@ from classifiers.predict import predict_single_file, predict_directory
 # Global current time for saving models, class-tables, and training info.
 current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 
-
 def experiment(reader, classifier_name,
                features, trials, split, model_name, features_outfile,
                C, kernel, iter, degree, penalty, solver, n_estimators,
@@ -114,7 +113,6 @@ def extract_sampler(mode='train', classifier='rf', feature='head', model_name=No
         if feature not in ["head", "rand", "randhead"]:
             print("Invalid feature option %s" % feature)
             return
-                                        rand_bytes=rand_bytes), prediction_file)
         t0 = time.time()
         prediction = predict_single_file(predict_file, trained_classifier, class_table_name=class_table_name,
                                          feature=feature)
@@ -219,7 +217,6 @@ if __name__ == '__main__':
     parser.add_argument("--features_outfile", type=str, help="file to write features to if mode is labels_feautres"
                                                              "else it's a pkl with a reader object",
                         default=None)
-
     parser.add_argument("--C", type=float, help="regularization parameter that is only useful in Logit and SVC", default=1)
     parser.add_argument("--kernel", type=str, help="Specified SVC Kernel (Ignored for others)", default='rbf')
     parser.add_argument("--iter", type=int, help="number of max iterations until it stops (relevant for SVC and Logit only)", default=-1)

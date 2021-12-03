@@ -14,6 +14,10 @@ class HeadBytes(FeatureMaker):
         self.head_size = head_size
         self.nfeatures = head_size
         self.class_table = {}
+
+    # TODO: There has to be a better way than this for acquiring the features?
+    # Seems like iterating through each byte one by one will be difficult in 
+    # terms of scaling efficiently for training
  
     def get_feature(self, open_file):
         """Retrieves the first head_size number of bytes from a file.

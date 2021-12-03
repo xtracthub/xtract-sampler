@@ -10,7 +10,6 @@ and has functions to create (and access) the following:
 --> a list of file directories, filepaths, features, and file labels
 """
 
-
 class FileReader(object):
     """Takes a single file and turns it into features."""
 
@@ -61,7 +60,7 @@ class NaiveTruthReader(object):
 
         Parameters:
         feature_maker (str): An instance of a FileFeature class to extract
-        features with (HeadBytes, RandBytes, RandHead, Ngram, RandNgram).
+        features with (HeadBytes, RandBytes, RandHead).
         labelfile (.csv file): .csv file containing filepaths and labels.
 
         Return:
