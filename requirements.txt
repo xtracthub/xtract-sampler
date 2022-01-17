@@ -10,3 +10,4 @@ rake-nltk
 netCDF4
 pandas
 xlrd
+xgboost
