@@ -18,9 +18,21 @@ class Scheduler:
 		priority_list = []
 		for probability_tuple in prob_vectors:
 			file_name, extractor, probability = probability_tuple
-			expected_time = self.model_piles[extractor]['extraction_time'].predict(file_sizes[file_name])
-			expected_size = self.model_piles[extractor]['extraction_size'].predict(file_sizes[file_name])
 
+
+			time_model = self.model_piles[extractor]['extraction_time']
+			if isinstance(time_model, float):
+				expected_time = time_model
+			else:
+				expected_time = time_model.predict(file_sizes[file_name])
+			
+			size_model = self.model_piles[extractor]['extraction_size']
+
+			if isinstance(size_model, float):
+				expected_size = size_model
+			else:
+				expected_size = size_model.predict(file_sizes[file_name])
+	 
 			priority_value = self.calculate_benefit(self, probability, expected_time, expected_size)
 
 			priority_list.append((file_name, extractor, priority_value))
