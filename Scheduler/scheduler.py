@@ -18,26 +18,29 @@ class Scheduler:
 
 	def run(self, prob_vectors, file_sizes):
 		priority_list = []
-		for probability_tuple in prob_vectors:
-			file_name, extractor, probability = probability_tuple
 
 
-			time_model = self.model_piles[extractor]['extraction_time']
-			if isinstance(time_model, float):
-				expected_time = time_model
-			else:
-				expected_time = time_model.predict(file_sizes[file_name])
+		with open(prob_vectors, "r") as f:
+			data = json.load(f)
+			for name, vector in data.items():
+				for extractor, probability in vector.items():
+
+					time_model = self.model_piles[extractor]['extraction_time']
+					if isinstance(time_model, float):
+						expected_time = time_model
+					else:
+						expected_time = time_model.predict(file_sizes[name])
+					
+					size_model = self.model_piles[extractor]['extraction_size']
+
+					if isinstance(size_model, float):
+						expected_size = size_model
+					else:
+						expected_size = size_model.predict(file_sizes[name])
 			
-			size_model = self.model_piles[extractor]['extraction_size']
+					priority_value = self.calculate_benefit(self, probability, expected_time, expected_size)
 
-			if isinstance(size_model, float):
-				expected_size = size_model
-			else:
-				expected_size = size_model.predict(file_sizes[file_name])
-	 
-			priority_value = self.calculate_benefit(self, probability, expected_time, expected_size)
-
-			priority_list.append((file_name, extractor, priority_value))
+					priority_list.append((name, extractor, priority_value))
 
 		return priority_list
 	
@@ -58,7 +61,8 @@ if __name__ == "__main__":
 
 	with open("cdiac_probability_predictions.json") as f:
 		data = json.load(f)
-		for v in data.values():
-			for key, value in v['probabilities'].items():
+		for name, value in data.items():
+			print(name)
+			for key, value in value['probabilities'].items():
 				print(key, value)
 			break
