@@ -74,7 +74,7 @@ def generate_regressors(data_file, extractor, k=2):
         linear_scores = dict()
         nonlinear_scores = dict()
 
-        if r >= 0.4:
+        if r >= 0.5:
             # correlated
             for name, model in linear_pipelines.items():
                 # Split into ten folds and hope the bias isn't too high (there aren't TOO many files)
@@ -83,10 +83,11 @@ def generate_regressors(data_file, extractor, k=2):
 
                 print(f"{name} -- r2_score: {r2_score}")
                 if r2_score > 0:
+                    # rint(
                     linear_scores[name] = r2_score
                     print("r2_score: ", r2_score)
 
-        if canova_value >= 0.4:
+        if canova_value >= 0.5:
             for name, model in nonlinear_pipelines.items():
                 # Split into ten folds and hope the bias isn't too high (there aren't TOO many files)
                 k_fold = KFold(n_splits=k, shuffle=True)
@@ -96,6 +97,7 @@ def generate_regressors(data_file, extractor, k=2):
                     nonlinear_scores[name] = r2_score
                     print("r2_score: ", r2_score)
 
+        print(linear_scores)
         if len(linear_scores) == 0 and len(nonlinear_scores) == 0:  # in cases all regressions are bad
             print(f"[generate regressors] ALL REGRESSIONS ARE BAD.")
             model_pile[metric] = data_df[metric].mean()
@@ -151,5 +153,7 @@ def pick_best_model(linear_scores, nonlinear_scores, X, Y, linear_pipelines, non
 
 
 if __name__ == "__main__":
-    model_pkl = generate_regressors("test_data_file_linear_fit.csv", "keyword")
-    print(f"Model PKL: {model_pkl}")
+
+    for extractor in ['hdf', 'python', 'c-code']: 
+        model_pkl = generate_regressors(f"matthew_cdiac_inputs/matthew-cdiac-input-{extractor}.csv", extractor)
+        print(f"Model PKL: {model_pkl}")
