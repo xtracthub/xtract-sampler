@@ -2,6 +2,7 @@ import os
 import pickle
 from math import log
 import numpy as np
+import json
 
 class Scheduler:
 
@@ -9,9 +10,10 @@ class Scheduler:
 		self.model_piles = dict()
 		for subdir, dirs, files in os.walk(models_dir):
 			for file_name in files:		
-				extractor_name = file_name.split("_").split(".")[0]
-				with open(file_name, "rb") as f:
-					self.model_piles[extractor_name] = pickle.load(file_name)
+				extractor_name = file_name.split("_")[2].split(".")[0]
+				file_path = os.path.join(subdir, file_name)
+				with open(file_path, "rb") as f:
+					self.model_piles[extractor_name] = pickle.load(f)
 
 
 	def run(self, prob_vectors, file_sizes):
@@ -45,3 +47,18 @@ class Scheduler:
 		sizes_probability = expected_size * probability + 1 # Laplacian Smoothing
 		benefit_raw = sizes_probability / (expected_time + np.finfo(float).eps + 1) # so we don't divide by zero
 		return -1 * log(benefit_raw) # priority sorts in increasing order so we flip it around 
+
+
+if __name__ == "__main__":
+
+
+	scheduler = Scheduler(os.path.abspath("cdiac_model_piles/"))
+
+
+
+	with open("cdiac_probability_predictions.json") as f:
+		data = json.load(f)
+		for v in data.values():
+			for key, value in v['probabilities'].items():
+				print(key, value)
+			break

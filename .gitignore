@@ -70,3 +70,5 @@ Scheduler/Experiment4_images
 Scheduler/EXPERIMENT4_FINALIMAGES
 Scheduler/EXPERIMENT4_PAPERIMAGES
 Scheduler/Regressor/Model_Pile_keyword.pkl
+Scheduler/cdiac_model_piles/
+Scheduler/cdiac_probability_predictions.json
