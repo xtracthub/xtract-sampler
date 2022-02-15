@@ -72,3 +72,15 @@ Scheduler/EXPERIMENT4_PAPERIMAGES
 Scheduler/Regressor/Model_Pile_keyword.pkl
 Scheduler/cdiac_model_piles/
 Scheduler/cdiac_probability_predictions.json
+Scheduler/cdiac_data/cdiacc-codescores.json
+Scheduler/cdiac_data/cdiachdfscores.json
+Scheduler/cdiac_data/cdiacimagesscores.json
+Scheduler/cdiac_data/cdiacjsonxmlscores.json
+Scheduler/cdiac_data/cdiackeywordscores.json
+Scheduler/cdiac_data/cdiacpythonscores.json
+Scheduler/cdiac_data/cdiacnetcdfscores.json
+Scheduler/cdiac_error_files
+Scheduler/cdiac_error_files_2
+Scheduler/cdiac_priority_list
+Scheduler/cdiac_priority_list_2
+Scheduler/csv-try-2.csv
