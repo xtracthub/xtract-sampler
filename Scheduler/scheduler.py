@@ -37,32 +37,33 @@ class Scheduler:
 						expected_size = None
 						expected_time = None
 
+					
 						time_model = self.model_piles[extractor]['extraction_time']
 						if isinstance(time_model, float):
 							expected_time = time_model
 						else:
 							try:
-								expected_time = time_model.predict(file_sizes_dict[name])
-							except KeyError:
+								expected_time = time_model.predict(file_sizes_dict[name])[0]
+							except KeyError as e:
+								print(e)
 								error_files.add((name, count))
 						size_model = self.model_piles[extractor]['extraction_size']
 
 						if isinstance(size_model, float):
 							expected_size = size_model
 						else:
-							expected_size = size_model.predict(file_sizes_dict[name])
+							expected_size = size_model.predict(file_sizes_dict[name])[0]
 
 						if expected_time != None and expected_size != None:
 							priority_value = self.calculate_benefit(probability, expected_time, expected_size)
 							priority_list.append((name, extractor, priority_value))
 							pairs_processed += 1
-						extrac_count += 1
+
+							extrac_count += 1
 
 				count += 1
 		print("Files processed: ", count)
 		print("Pairs Processed:", pairs_processed)
-
-
 
 		return priority_list, list(error_files)
 	
@@ -92,8 +93,8 @@ if __name__ == "__main__":
 
 	print("Error files: ", len(error_files))
 
-	with open('cdiac_priority_list_2', 'wb+') as out:
+	with open('cdiac_priority_list_3.pkl', 'wb+') as out:
 		pickle.dump(output, out)
 
-	with open('cdiac_error_files_2', 'wb+') as out:
+	with open('cdiac_error_files_3.pkl', 'wb+') as out:
 		pickle.dump(error_files, out)
