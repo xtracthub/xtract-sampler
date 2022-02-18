@@ -87,3 +87,4 @@ Scheduler/csv-try-2.csv
 Scheduler/cdiac_error_files_3.pkl
 .gitignore
 Scheduler/cdiac_priority_list_3.pkl
+Scheduler/cdiac_data/cdiactabularscores.json
